@@ -3,8 +3,7 @@ import GoogleStrategy from "passport-google-oauth20";
 import { userModel } from "../models/userModel.js";
 import { generateAccessAndRefereshTokens } from "../controllers/userController.js";
 import express from "express";
-import "dotenv/config"
-
+import "dotenv/config";
 
 const googleRoute = express.Router();
 
@@ -13,7 +12,7 @@ passport.use(
     {
       clientID: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-      callbackURL: "http://localhost:3000/auth/google/callback",
+      callbackURL: "http://localhost:4000/auth/google/callback",
     },
     async (accessToken, refreshToken, profile, cb) => {
       try {
@@ -22,25 +21,39 @@ passport.use(
         let user = await userModel.findOne({ googleId: profile.id });
 
         if (!user) {
-          user = new userModel({
-            googleId: profile.id,
-            displayName: profile.displayName,
-            email: profile.emails[0].value,
-            avatar:
-              profile.photos && profile.photos.length > 0
-                ? profile.photos[0].value
-                : null,
-            password: null,
-            fullname: profile.displayName,
-          });
+          // Try to find by email
+          user = await userModel.findOne({ email: profile.emails[0].value });
 
-          await user.save();
+          if (user) {
+            // If found, link Google account
+            user.googleId = profile.id;
+            user.displayName = user.displayName || profile.displayName;
+            user.avatar =
+              user.avatar ||
+              (profile.photos && profile.photos.length > 0
+                ? profile.photos[0].value
+                : null);
+            await user.save();
+          } else {
+            // If not found, create new user
+            user = new userModel({
+              googleId: profile.id,
+              displayName: profile.displayName,
+              email: profile.emails[0].value,
+              avatar:
+                profile.photos && profile.photos.length > 0
+                  ? profile.photos[0].value
+                  : null,
+              password: null,
+              fullname: profile.displayName,
+            });
+            await user.save();
+          }
         }
 
         return cb(null, user);
       } catch (err) {
         return cb(err, null);
-        s;
       }
     }
   )
@@ -87,41 +100,44 @@ googleRoute.get(
   }
 );
 
-
 googleRoute.get("/auth/logout", (req, res) => {
-    try {
-      // Clear the cookies
-      res.clearCookie("accessToken", {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production", // Only set secure flag in production
-        sameSite: "Strict" // Ensures cookies are sent only for same-site requests
-      });
-      res.clearCookie("refreshToken", {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production", // Only set secure flag in production
-        sameSite: "Strict" // Ensures cookies are sent only for same-site requests
-      });
-  
-      // If you're using express-session (Passport.js), clear the session
-      if (req.logout) {
-        req.logout((err) => {
-          if (err) {
-            console.error("Error during logout:", err);
-            return res.status(500).json({ success: false, message: "Logout failed" });
-          }
-  
-          return res.status(200).json({ success: true, message: "Logged out successfully" });
-        });
-      } else {
-        // In case req.logout() is not defined, just return a success message
-        res.status(200).json({ success: true, message: "Logged out successfully" });
-      }
-    } catch (error) {
-      console.error("Logout failed:", error);
-      res.status(500).json({ success: false, message: "Logout failed" });
-    }
-  });
-  
+  try {
+    // Clear the cookies
+    res.clearCookie("accessToken", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production", // Only set secure flag in production
+      sameSite: "Strict", // Ensures cookies are sent only for same-site requests
+    });
+    res.clearCookie("refreshToken", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production", // Only set secure flag in production
+      sameSite: "Strict", // Ensures cookies are sent only for same-site requests
+    });
 
+    // If you're using express-session (Passport.js), clear the session
+    if (req.logout) {
+      req.logout((err) => {
+        if (err) {
+          console.error("Error during logout:", err);
+          return res
+            .status(500)
+            .json({ success: false, message: "Logout failed" });
+        }
+
+        return res
+          .status(200)
+          .json({ success: true, message: "Logged out successfully" });
+      });
+    } else {
+      // In case req.logout() is not defined, just return a success message
+      res
+        .status(200)
+        .json({ success: true, message: "Logged out successfully" });
+    }
+  } catch (error) {
+    console.error("Logout failed:", error);
+    res.status(500).json({ success: false, message: "Logout failed" });
+  }
+});
 
 export default googleRoute;
