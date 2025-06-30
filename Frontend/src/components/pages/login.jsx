@@ -3,11 +3,11 @@ import { FcGoogle } from "react-icons/fc";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { appContext } from "../../store/storeContext";
+import { toast } from "react-toastify";
 
 function Login() {
   const { backendUrl, setIsLoggedIn } = useContext(appContext);
   const navigate = useNavigate();
-  const [errorMessage, setErrorMessage] = useState("");
 
   const [data, setData] = useState({
     email: "",
@@ -34,35 +34,29 @@ function Login() {
       );
 
       if (response.data.success) {
+        toast.success("Login successful!");
         setIsLoggedIn(true);
-
         navigate("/Chat", { replace: true });
-
-        // Redirect or perform further actions
-        console.log("Login successful!");
       } else {
+        toast.error(response.data.message || "Login failed.");
         console.error("Login failed:", response.data.message);
       }
     } catch (error) {
       if (error.response) {
         const status = error.response.status;
         if (status === 401) {
-          setErrorMessage("Incorrect password. Please try again.");
+          toast.error("Incorrect password. Please try again.");
         } else if (status === 404) {
-          setErrorMessage(
-            "User not found. Please check your email or register."
-          );
+          toast.error("User not found. Please check your email or register.");
         } else if (status === 400) {
-          setErrorMessage("User is already login with the google.");
+          toast.error("User is already logged in with Google.");
         } else {
-          setErrorMessage(
+          toast.error(
             error.response.data.message || "An unexpected error occurred."
           );
         }
       } else {
-        setErrorMessage(
-          "Unable to connect to the server. Please try again later."
-        );
+        toast.error("Unable to connect to the server. Please try again later.");
       }
     }
   };
@@ -78,12 +72,6 @@ function Login() {
           <h2 className="text-xl font-semibold">Login</h2>
         </div>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          {errorMessage && (
-            <div className="mb-4 text-red-500 text-sm text-center">
-              {errorMessage}
-            </div>
-          )}
-
           <input
             type="email"
             name="email"

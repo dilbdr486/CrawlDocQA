@@ -3,6 +3,7 @@ import { FcGoogle } from "react-icons/fc";
 import { Link, useNavigate } from "react-router-dom";
 import { appContext } from "../../store/storeContext";
 import axios from "axios";
+import { toast } from "react-toastify";
 
 function Register() {
   const navigate = useNavigate();
@@ -10,7 +11,6 @@ function Register() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [email, setEmail] = useState("");
-  const [passwordError, setPasswordError] = useState("");
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -19,7 +19,7 @@ function Register() {
       /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]).{8,}$/;
 
     if (!strongPasswordRegex.test(password)) {
-      setPasswordError(
+      toast.error(
         "Password must be at least 8 characters long and include uppercase, lowercase, number, and special character."
       );
       return;
@@ -27,7 +27,7 @@ function Register() {
 
     try {
       await axios.post(`${backendUrl}/api/v1/send-verify-otp`, { email });
-
+      toast.success("OTP sent to your email!");
       navigate("/otpVerification", {
         state: { username, email, password },
       });
@@ -35,17 +35,16 @@ function Register() {
       if (error.response) {
         const status = error.response.status;
         if (status === 400) {
-          setErrorMessage(
+          toast.error(
             error.response.data.message || "Invalid registration data."
           );
-        }
-        if (status === 409) {
-          setErrorMessage("User is already exists.");
+        } else if (status === 409) {
+          toast.error("User already exists.");
         } else {
-          setErrorMessage("Something went wrong. Please try again later.");
+          toast.error("Something went wrong. Please try again later.");
         }
       } else {
-        setErrorMessage("Network error. Please check your connection.");
+        toast.error("Network error. Please check your connection.");
       }
     }
   };
@@ -62,10 +61,6 @@ function Register() {
         </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          {passwordError && (
-            <p className="text-red-500 text-sm -mt-2">{passwordError}</p>
-          )}
-
           <input
             type="email"
             placeholder="Enter your email..."

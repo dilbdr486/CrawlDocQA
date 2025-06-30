@@ -2,6 +2,7 @@ import React, { useContext, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { appContext } from "../../store/storeContext";
+import { toast } from "react-toastify";
 
 function OtpVerification() {
   const [otp, setOtp] = useState("");
@@ -19,19 +20,19 @@ function OtpVerification() {
       });
 
       if (response.data.success) {
+        toast.success("OTP verified successfully!");
         navigate("/avatar", { state: { username, email, password } });
       } else {
-        alert("OTP verification failed!");
+        toast.error("OTP verification failed!");
       }
     } catch (error) {
+      toast.error("OTP verification failed. Please try again.");
       console.error("OTP verification failed", error);
     }
   };
 
   return (
     <div className="flex justify-center items-center flex-col h-screen w-screen bg-black text-white px-4">
-      <h1 className="text-3xl font-bold mb-4">FreeAPI Chat App</h1>
-
       <div className="w-full max-w-md p-8 bg-zinc-900 shadow-lg rounded-2xl border border-zinc-700">
         <div className="flex flex-col items-center gap-2 mb-6">
           <h2 className="text-xl font-semibold">Enter OTP</h2>

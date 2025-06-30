@@ -2,6 +2,7 @@ import { useState, useContext } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { appContext } from "../../store/storeContext";
 import axios from "axios";
+import { toast } from "react-toastify";
 
 function AvatarUpload() {
   const { state } = useLocation();
@@ -9,7 +10,6 @@ function AvatarUpload() {
   const { backendUrl, setIsLoggedIn } = useContext(appContext);
   const [avatar, setAvatar] = useState(null);
   const [preview, setPreview] = useState(null);
-  const [passwordError, setPasswordError] = useState("");
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
@@ -23,7 +23,7 @@ function AvatarUpload() {
 
   const handleContinue = async () => {
     if (!state || !state.username || !state.email || !state.password) {
-      console.error("Missing registration data");
+      toast.error("Missing registration data");
       return;
     }
 
@@ -46,6 +46,7 @@ function AvatarUpload() {
       );
 
       if (response.data.success) {
+        toast.success("Registration successful!");
         setIsLoggedIn(true);
         navigate("/chat");
       }
@@ -53,17 +54,16 @@ function AvatarUpload() {
       if (error.response) {
         const status = error.response.status;
         if (status === 400) {
-          setPasswordError(
+          toast.error(
             error.response.data.message || "Invalid registration data."
           );
-        }
-        if (status === 409) {
-          setPasswordError("User is already exists.");
+        } else if (status === 409) {
+          toast.error("User already exists.");
         } else {
-          setPasswordError("Something went wrong. Please try again later.");
+          toast.error("Something went wrong. Please try again later.");
         }
       } else {
-        setPasswordError("Network error. Please check your connection.");
+        toast.error("Network error. Please check your connection.");
       }
     }
   };
@@ -73,10 +73,6 @@ function AvatarUpload() {
       <div className="w-full max-w-md p-8 bg-zinc-900 shadow-lg rounded-2xl border border-zinc-700">
         <div className="flex flex-col items-center gap-4">
           <h2 className="text-xl font-semibold">Upload Your Avatar</h2>
-
-          {passwordError && (
-            <p className="text-red-500 text-sm -mt-2">{passwordError}</p>
-          )}
 
           {preview ? (
             <img

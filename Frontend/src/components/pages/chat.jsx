@@ -4,6 +4,7 @@ import { IoMdSend } from "react-icons/io";
 import { appContext } from "../../store/storeContext";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import { toast } from "react-toastify";
 
 // Improved helpers at the top-level, before the Chat component
 function isGenericAIResponse(aiText) {
@@ -77,6 +78,7 @@ const Chat = () => {
   const messagesEndRef = useRef(null);
   const navigate = useNavigate();
   const [selectedFile, setSelectedFile] = useState(null);
+  const [showLogoutDialog, setShowLogoutDialog] = useState(false);
 
   useEffect(() => {
     const init = async () => {
@@ -172,8 +174,13 @@ const Chat = () => {
   };
 
   const handleLogout = async () => {
-    await logout();
-    navigate("/login");
+    try {
+      await logout();
+      toast.success("Logged out successfully!");
+      navigate("/login");
+    } catch (error) {
+      toast.error("Logout failed. Please try again.");
+    }
   };
 
   const handleSendMessage = async () => {
@@ -262,6 +269,10 @@ const Chat = () => {
       );
     } catch (error) {
       console.error("Error sending message:", error);
+      toast.error(
+        error.response?.data?.error ||
+          "Failed to connect to the server. Please make sure the server is running."
+      );
       const errorMessage = {
         id: Date.now().toString(),
         type: "error",
@@ -292,6 +303,7 @@ const Chat = () => {
 
     // Check if file is PDF
     if (file.type !== "application/pdf") {
+      toast.error("Please upload a PDF file only.");
       const errorMessage = {
         id: Date.now().toString(),
         type: "error",
@@ -414,6 +426,10 @@ const Chat = () => {
       );
     } catch (error) {
       console.error("Error uploading file:", error);
+      toast.error(
+        error.response?.data?.error ||
+          "Failed to upload the PDF. Please try again."
+      );
       const errorMessage = {
         id: Date.now().toString(),
         type: "error",
@@ -465,7 +481,7 @@ const Chat = () => {
         <div className="p-4 border-b border-zinc-700">
           <button
             onClick={createNewConversation}
-            className="w-full bg-purple-700 hover:bg-purple-800 text-white font-medium px-4 py-3 rounded-lg transition-colors"
+            className="w-full bg-purple-700 hover:bg-purple-800 text-white font-medium px-4 py-3 rounded-lg transition-colors shadow-sm hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer"
           >
             + New Chat
           </button>
@@ -490,8 +506,9 @@ const Chat = () => {
             <p className="text-zinc-400 text-xs">AI Assistant</p>
           </div>
           <button
-            onClick={handleLogout}
-            className="text-zinc-400 hover:text-white text-sm"
+            onClick={() => setShowLogoutDialog(true)}
+            className="text-zinc-400 hover:text-white text-sm px-3 py-1 rounded-lg transition-colors hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-400 cursor-pointer"
+            title="Logout"
           >
             Logout
           </button>
@@ -521,7 +538,7 @@ const Chat = () => {
                     e.stopPropagation();
                     deleteConversation(conversation.id);
                   }}
-                  className="text-zinc-500 hover:text-red-400 text-sm ml-2"
+                  className="text-zinc-500 hover:text-red-400 text-sm ml-2 rounded transition-colors focus:outline-none focus:ring-2 focus:ring-red-400 cursor-pointer"
                 >
                   ×
                 </button>
@@ -547,13 +564,13 @@ const Chat = () => {
                 <div className="flex gap-4 justify-center">
                   <button
                     onClick={createNewConversation}
-                    className="bg-purple-700 hover:bg-purple-800 text-white px-6 py-3 rounded-lg transition-colors"
+                    className="bg-purple-700 hover:bg-purple-800 text-white px-6 py-3 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer"
                   >
                     Start New Chat
                   </button>
                   <button
                     onClick={handleFileButtonClick}
-                    className="bg-zinc-700 hover:bg-zinc-600 text-white px-6 py-3 rounded-lg transition-colors"
+                    className="bg-zinc-700 hover:bg-zinc-600 text-white px-6 py-3 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-400 cursor-pointer"
                   >
                     Upload PDF
                   </button>
@@ -662,14 +679,14 @@ const Chat = () => {
                   </div>
                   <button
                     onClick={handleRemoveFile}
-                    className="ml-auto text-zinc-400 hover:text-white rounded-full focus:outline-none"
+                    className="ml-auto text-zinc-400 hover:text-white rounded-full focus:outline-none focus:ring-2 focus:ring-red-400 transition-colors cursor-pointer"
                     title="Remove file"
                   >
                     ×
                   </button>
                   <button
                     onClick={handleUploadSelectedFile}
-                    className="ml-4 bg-purple-700 hover:bg-purple-800 text-white px-3 py-1 rounded-lg text-xs font-medium"
+                    className="ml-4 bg-purple-700 hover:bg-purple-800 text-white px-3 py-1 rounded-lg text-xs font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer"
                     disabled={isUploading}
                   >
                     Upload
@@ -698,12 +715,11 @@ const Chat = () => {
               {/* File upload button */}
               <button
                 onClick={handleFileButtonClick}
-                disabled={isUploading}
-                className={`p-2 rounded-lg ${
+                className={`p-2 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-400 cursor-pointer ${
                   isUploading
                     ? "text-zinc-500 cursor-not-allowed"
                     : "text-zinc-400 hover:text-white hover:bg-zinc-700"
-                } transition-colors`}
+                }`}
                 title="Upload PDF"
               >
                 <FiPaperclip size={20} />
@@ -711,12 +727,11 @@ const Chat = () => {
 
               <button
                 onClick={handleSendMessage}
-                disabled={isLoading || !message.trim()}
-                className={`p-2 rounded-lg ${
+                className={`p-2 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer ${
                   isLoading || !message.trim()
                     ? "text-zinc-500 cursor-not-allowed"
                     : "text-white bg-purple-700 hover:bg-purple-800"
-                } transition-colors`}
+                }`}
               >
                 <IoMdSend size={20} />
               </button>
@@ -724,6 +739,37 @@ const Chat = () => {
           </div>
         </div>
       </main>
+
+      {/* Confirmation Dialog */}
+      {showLogoutDialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-zinc-900 rounded-2xl p-8 shadow-lg border border-zinc-700 w-full max-w-sm">
+            <h3 className="text-lg font-semibold text-white mb-4">
+              Confirm Logout
+            </h3>
+            <p className="text-zinc-300 mb-6">
+              Are you sure you want to logout?
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setShowLogoutDialog(false)}
+                className="px-4 py-2 rounded-lg bg-zinc-700 text-white hover:bg-zinc-600 transition-colors focus:outline-none focus:ring-2 focus:ring-zinc-400 cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  setShowLogoutDialog(false);
+                  handleLogout();
+                }}
+                className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors focus:outline-none focus:ring-2 focus:ring-red-400 cursor-pointer"
+              >
+                Logout
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
