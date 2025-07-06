@@ -77,6 +77,21 @@ function generateShortTitle(text, fallback) {
     .join(" ");
 }
 
+function getUrlTitle(url) {
+  try {
+    const { hostname, pathname } = new URL(url);
+    // Use domain + first path segment (if any) for more context
+    let title = hostname.replace(/^www\./, "");
+    if (pathname && pathname !== "/") {
+      const firstSegment = pathname.split("/").filter(Boolean)[0];
+      if (firstSegment) title += `/${firstSegment}`;
+    }
+    return title;
+  } catch {
+    return url;
+  }
+}
+
 const Chat = () => {
   const { getAuth, getUserData, userData, logout, backendUrl, ragServiceUrl } =
     useContext(appContext);
@@ -510,14 +525,9 @@ const Chat = () => {
         currentConv2 &&
         (currentConv2.title === "New Chat" || !currentConv2.title)
       ) {
-        let baseTitle;
-        if (isGenericAIResponse(aiMessage.content) && userFirstMessage2) {
-          baseTitle = userFirstMessage2;
-        } else {
-          baseTitle = aiMessage.content;
-        }
-        const sweetTitle = generateShortTitle(baseTitle, userFirstMessage2);
-        updateConversationTitle(currentConversationId, sweetTitle);
+        // Use the PDF file name (without extension) as the chat title
+        const fileName = selectedFile.name.replace(/\\.[^/.]+$/, "");
+        updateConversationTitle(currentConversationId, fileName);
       }
       setMessages(finalMessages);
       setConversations((prev) =>
@@ -624,7 +634,7 @@ const Chat = () => {
       const aiMessage = {
         id: (Date.now() + 1).toString(),
         type: "ai",
-        content: `✅`,
+        content: `✅ uploaded and processed successfully!`,
         timestamp: new Date().toISOString(),
       };
 
@@ -639,14 +649,15 @@ const Chat = () => {
         currentConv &&
         (currentConv.title === "New Chat" || !currentConv.title)
       ) {
-        let baseTitle;
-        if (isGenericAIResponse(aiMessage.content) && userFirstMessage) {
-          baseTitle = userFirstMessage;
-        } else {
-          baseTitle = aiMessage.content;
-        }
-        const sweetTitle = generateShortTitle(baseTitle, userFirstMessage);
-        updateConversationTitle(currentConversationId, sweetTitle);
+        const urlTitle = getUrlTitle(urlInput);
+        updateConversationTitle(currentConversationId, urlTitle);
+        setConversations((prev) =>
+          prev.map((conv) =>
+            conv.id === currentConversationId
+              ? { ...conv, title: urlTitle }
+              : conv
+          )
+        );
       }
       setMessages(finalMessages);
       setConversations((prev) =>
@@ -976,7 +987,7 @@ const Chat = () => {
                           style={{ animationDelay: "0.2s" }}
                         ></div>
                       </div>
-                      <span className="text-sm">AI is thinking...</span>
+                      <span className="text-sm"></span>
                     </div>
                   </div>
                 </div>
