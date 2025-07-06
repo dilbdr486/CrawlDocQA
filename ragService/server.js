@@ -3,7 +3,7 @@ import "dotenv/config";
 import { upload } from "./src/multer.js";
 import { loadPDF, processAndStoreWebContent } from "./src/splitter.js";
 import { queryOrRespond } from "./src/tools.js";
-import { HumanMessage } from "@langchain/core/messages";
+import { HumanMessage, AIMessage } from "@langchain/core/messages";
 import cors from "cors";
 import weaviate from "weaviate-ts-client";
 
@@ -68,13 +68,32 @@ app.post("/api/load-data", async (req, res) => {
 });
 
 app.post("/api/v1/query", async (req, res) => {
-  const { message, userId } = req.body;
+  const { message, userId, chatHistory } = req.body;
   if (!message || !userId) {
     return res.status(400).json({ error: "Message and userId are required" });
   }
   try {
     console.log(`User Query: ${message}`);
-    const inputs = { messages: [new HumanMessage(message)] };
+
+    // Convert chat history to LangChain messages
+    let messages = [];
+    if (chatHistory && Array.isArray(chatHistory)) {
+      messages = chatHistory
+        .map((msg) => {
+          if (msg.type === "user") {
+            return new HumanMessage(msg.content);
+          } else if (msg.type === "ai") {
+            return new AIMessage(msg.content);
+          }
+          return null;
+        })
+        .filter((msg) => msg !== null);
+    }
+
+    // Add current message
+    messages.push(new HumanMessage(message));
+
+    const inputs = { messages };
     const response = await queryOrRespond(inputs, userId);
     const aiMessage = response.messages[0]?.content || "No response from AI";
     console.log(`AI Response: ${aiMessage}`);

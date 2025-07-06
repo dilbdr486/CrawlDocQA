@@ -75,7 +75,11 @@ export async function queryOrRespond(state, userId) {
     "3. For questions, use the retrieved context to provide accurate answers.\n" +
     "4. If the context doesn't contain relevant information, say 'I don't have enough information to answer that question based on the available documents.'\n" +
     "5. Keep responses concise but informative (2-4 sentences).\n" +
-    "6. Always be helpful and professional.\n\n" +
+    "6. If the user asks for information in bullet points, use bullet points.\n" +
+    "7. If the user asks for information in number, numbered list, or similar, ALWAYS format your response as a numbered list in the following style: Each number should have a bold heading (e.g., **Heading:**) followed by a description. If there are technical terms or branch names, format them as inline code (e.g., `dev`). Example: 1. **Merge Completed:** Merged all pending feature branches into the `dev` branch after review.\n" +
+    "8. Do not use bullet points or paragraphs if the user requests a numbered list; always use numbers in that case.\n" +
+    "9. Consider the conversation history to provide contextual and relevant responses.\n" +
+    "10. Always be helpful and professional.\n\n" +
     `${retrievedContext ? `Retrieved Context:\n${retrievedContext}` : ""}`;
 
   const conversationMessages = state.messages.filter(
@@ -115,7 +119,11 @@ export async function generate(state) {
     "3. For questions, use the retrieved context to provide accurate answers.\n" +
     "4. If the context doesn't contain relevant information, say 'I don't have enough information to answer that question based on the available documents.'\n" +
     "5. Keep responses concise but informative (2-4 sentences).\n" +
-    "6. Always be helpful and professional.\n\n" +
+    "6. If the user asks for information in bullet points, use bullet points.\n" +
+    "7. If the user asks for information in number, numbered list, or similar, ALWAYS format your response as a numbered list in the following style: Each number should have a bold heading (e.g., **Heading:**) followed by a description. If there are technical terms or branch names, format them as inline code (e.g., `dev`). Example: 1. **Merge Completed:** Merged all pending feature branches into the `dev` branch after review.\n" +
+    "8. Do not use bullet points or paragraphs if the user requests a numbered list; always use numbers in that case.\n" +
+    "9. Consider the conversation history to provide contextual and relevant responses.\n" +
+    "10. Always be helpful and professional.\n\n" +
     `Retrieved Context:\n${docsContent}`;
 
   const conversationMessages = state.messages.filter(
@@ -124,10 +132,12 @@ export async function generate(state) {
       message instanceof SystemMessage ||
       (message instanceof AIMessage && message.tool_calls.length === 0)
   );
+
   const prompt = [
     new SystemMessage(systemMessageContent),
     ...conversationMessages,
   ];
+
   const response = await model.invoke(prompt);
   return { messages: [response] };
 }
