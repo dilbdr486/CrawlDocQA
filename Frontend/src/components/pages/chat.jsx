@@ -1,7 +1,18 @@
 import { useContext, useEffect, useState, useRef } from "react";
-import { FiPaperclip } from "react-icons/fi";
-import { IoMdSend } from "react-icons/io";
-import { FiLink } from "react-icons/fi";
+import {
+  AttachFile,
+  Send,
+  Link,
+  Logout,
+  MoreVert,
+  Edit,
+  Delete,
+  Check,
+  Close,
+} from "@mui/icons-material";
+import Menu from "@mui/material/Menu";
+import MenuItem from "@mui/material/MenuItem";
+import IconButton from "@mui/material/IconButton";
 import { appContext } from "../../store/storeContext";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
@@ -83,30 +94,55 @@ const Chat = () => {
   const navigate = useNavigate();
   const [selectedFile, setSelectedFile] = useState(null);
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
+  const [menuAnchorEl, setMenuAnchorEl] = useState(null);
+  const [menuConversationId, setMenuConversationId] = useState(null);
+  const [renamingId, setRenamingId] = useState(null);
+  const [renameValue, setRenameValue] = useState("");
 
   useEffect(() => {
     const init = async () => {
       await getAuth();
       await getUserData();
 
-      // Load from localStorage
-      const data = localStorage.getItem("chat_conversations");
-      if (data) {
-        try {
-          const parsed = JSON.parse(data);
-          const now = Date.now();
-          const sevenDays = 7 * 24 * 60 * 60 * 1000;
-          const freshConvs = (parsed.conversations || []).filter((conv) => {
-            return now - new Date(conv.timestamp).getTime() < sevenDays;
-          });
-          console.log("Loaded from localStorage, after filtering:", freshConvs);
-          setConversations(freshConvs);
-          if (freshConvs.length > 0) {
-            setCurrentConversationId(freshConvs[0].id);
-            setMessages(freshConvs[0].messages);
+      // Load conversations from MongoDB
+      try {
+        const response = await axios.get(
+          `${backendUrl}/api/v1/chat/conversations`,
+          {
+            withCredentials: true,
           }
-        } catch (e) {
-          localStorage.removeItem("chat_conversations");
+        );
+
+        if (response.data.success) {
+          const conversations = response.data.data || [];
+          console.log("Loaded from MongoDB:", conversations);
+          setConversations(conversations);
+          if (conversations.length > 0) {
+            setCurrentConversationId(conversations[0].id);
+            setMessages(conversations[0].messages);
+          }
+        }
+      } catch (error) {
+        console.error("Error loading conversations:", error);
+        // Fallback to localStorage if API fails
+        const data = localStorage.getItem("chat_conversations");
+        if (data) {
+          try {
+            const parsed = JSON.parse(data);
+            const now = Date.now();
+            const sevenDays = 7 * 24 * 60 * 60 * 1000;
+            const freshConvs = (parsed.conversations || []).filter((conv) => {
+              return now - new Date(conv.timestamp).getTime() < sevenDays;
+            });
+            console.log("Loaded from localStorage (fallback):", freshConvs);
+            setConversations(freshConvs);
+            if (freshConvs.length > 0) {
+              setCurrentConversationId(freshConvs[0].id);
+              setMessages(freshConvs[0].messages);
+            }
+          } catch (e) {
+            localStorage.removeItem("chat_conversations");
+          }
         }
       }
 
@@ -115,15 +151,37 @@ const Chat = () => {
     init();
   }, []);
 
-  // Save conversations to localStorage on every change
+  // Save conversations to MongoDB on every change
   useEffect(() => {
-    const data = {
-      conversations,
-      savedAt: Date.now(),
-    };
-    console.log("Saving to localStorage:", conversations);
-    localStorage.setItem("chat_conversations", JSON.stringify(data));
-  }, [conversations]);
+    if (!loading && conversations.length > 0 && currentConversationId) {
+      const currentConversation = conversations.find(
+        (conv) => conv.id === currentConversationId
+      );
+      if (currentConversation) {
+        saveConversationToMongoDB(currentConversation);
+      }
+    }
+  }, [conversations, currentConversationId, loading]);
+
+  // Function to save conversation to MongoDB
+  const saveConversationToMongoDB = async (conversation) => {
+    try {
+      await axios.post(`${backendUrl}/api/v1/chat/save`, conversation, {
+        headers: {
+          "Content-Type": "application/json",
+        },
+        withCredentials: true,
+      });
+    } catch (error) {
+      console.error("Error saving conversation to MongoDB:", error);
+      // Fallback to localStorage
+      const data = {
+        conversations,
+        savedAt: Date.now(),
+      };
+      localStorage.setItem("chat_conversations", JSON.stringify(data));
+    }
+  };
 
   // Auto scroll to bottom when new messages arrive
   useEffect(() => {
@@ -159,21 +217,44 @@ const Chat = () => {
   };
 
   // Update conversation title
-  const updateConversationTitle = (conversationId, title) => {
-    setConversations((prev) =>
-      prev.map((conv) =>
-        conv.id === conversationId ? { ...conv, title: title } : conv
-      )
-    );
+  const updateConversationTitle = async (conversationId, title) => {
+    try {
+      await axios.patch(
+        `${backendUrl}/api/v1/chat/conversation/${conversationId}/title`,
+        { title },
+        { withCredentials: true }
+      );
+      setConversations((prev) =>
+        prev.map((conv) =>
+          conv.id === conversationId ? { ...conv, title } : conv
+        )
+      );
+      toast.success("Chat renamed!");
+    } catch (error) {
+      toast.error("Failed to rename chat.");
+      console.error("Rename error:", error);
+    }
   };
 
   // Delete conversation
-  const deleteConversation = (conversationId) => {
-    setConversations((prev) =>
-      prev.filter((conv) => conv.id !== conversationId)
-    );
-    if (currentConversationId === conversationId) {
-      createNewConversation();
+  const deleteConversation = async (conversationId) => {
+    try {
+      await axios.delete(
+        `${backendUrl}/api/v1/chat/conversation/${conversationId}`,
+        {
+          withCredentials: true,
+        }
+      );
+      setConversations((prev) =>
+        prev.filter((conv) => conv.id !== conversationId)
+      );
+      if (currentConversationId === conversationId) {
+        createNewConversation();
+      }
+      toast.success("Chat deleted!");
+    } catch (error) {
+      toast.error("Failed to delete chat.");
+      console.error("Delete error:", error);
     }
   };
 
@@ -189,10 +270,7 @@ const Chat = () => {
 
   const handleSendMessage = async () => {
     if (!message.trim()) return;
-
-    // Clear the input immediately
     setMessage("");
-
     try {
       setIsLoading(true);
 
@@ -224,7 +302,7 @@ const Chat = () => {
       // Send to backend using axios
       const response = await axios.post(
         `${ragServiceUrl}/api/v1/query`,
-        { message: message },
+        { message: message, userId: userData?._id },
         {
           headers: {
             "Content-Type": "application/json",
@@ -272,11 +350,26 @@ const Chat = () => {
         )
       );
     } catch (error) {
-      console.error("Error sending message:", error);
-      toast.error(
-        error.response?.data?.error ||
+      if (error.response && error.response.data && error.response.data.error) {
+        if (error.response.data.error.includes("Unauthorized access")) {
+          toast.error(
+            "You are not authorized to access some of this data. Please re-upload your documents or contact support."
+          );
+          setMessages([]); // Optionally clear chat
+        } else if (
+          error.response.data.error.includes("Failed to process the query")
+        ) {
+          toast.error(
+            "Sorry, we couldn't process your query. Please try again or check your uploaded documents."
+          );
+        } else {
+          toast.error(error.response.data.error);
+        }
+      } else {
+        toast.error(
           "Failed to connect to the server. Please make sure the server is running."
-      );
+        );
+      }
       const errorMessage = {
         id: Date.now().toString(),
         type: "error",
@@ -371,7 +464,7 @@ const Chat = () => {
 
       // Send file to backend
       const response = await axios.post(
-        `${ragServiceUrl}/api/v1/upload`,
+        `${ragServiceUrl}/api/v1/upload?userId=${userData?._id}`,
         formData,
         {
           headers: {
@@ -512,7 +605,7 @@ const Chat = () => {
       // Send URL to backend
       const response = await axios.post(
         `${ragServiceUrl}/api/load-data`,
-        { url: urlInput },
+        { url: urlInput, userId: userData?._id },
         {
           headers: {
             "Content-Type": "application/json",
@@ -597,6 +690,31 @@ const Chat = () => {
     }
   };
 
+  const handleMenuOpen = (event, conversationId) => {
+    setMenuAnchorEl(event.currentTarget);
+    setMenuConversationId(conversationId);
+  };
+  const handleMenuClose = () => {
+    setMenuAnchorEl(null);
+    setMenuConversationId(null);
+  };
+  const handleRename = () => {
+    setRenamingId(menuConversationId);
+    setRenameValue(
+      conversations.find((c) => c.id === menuConversationId)?.title || ""
+    );
+    handleMenuClose();
+  };
+  const handleRenameSubmit = () => {
+    updateConversationTitle(renamingId, renameValue);
+    setRenamingId(null);
+    setRenameValue("");
+  };
+  const handleDelete = () => {
+    deleteConversation(menuConversationId);
+    handleMenuClose();
+  };
+
   if (loading)
     return (
       <div className="flex items-center justify-center h-screen bg-zinc-950">
@@ -638,9 +756,10 @@ const Chat = () => {
           </div>
           <button
             onClick={() => setShowLogoutDialog(true)}
-            className="text-zinc-400 hover:text-white text-sm px-3 py-1 rounded-lg transition-colors hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-400 cursor-pointer"
+            className="text-slate-500 hover:text-red-600 text-sm px-3 py-2 rounded-lg transition-all duration-200 hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-200 cursor-pointer font-medium flex items-center gap-2"
             title="Logout"
           >
+            <Logout style={{ fontSize: 16 }} />
             Logout
           </button>
         </div>
@@ -650,32 +769,91 @@ const Chat = () => {
           {conversations.map((conversation) => (
             <div
               key={conversation.id}
-              className={`p-3 border-b border-zinc-800 cursor-pointer hover:bg-zinc-800 transition-colors ${
-                currentConversationId === conversation.id ? "bg-zinc-800" : ""
-              }`}
+              className={`p-4 border-b border-slate-200 cursor-pointer transition-all duration-200 hover:bg-white ${
+                currentConversationId === conversation.id
+                  ? "bg-white shadow-sm"
+                  : ""
+              } flex items-center justify-between`}
               onClick={() => loadConversation(conversation.id)}
             >
-              <div className="flex items-center justify-between">
-                <div className="flex-1 min-w-0">
-                  <p className="text-white text-sm truncate">
-                    {conversation.title}
-                  </p>
-                  <p className="text-zinc-400 text-xs">
-                    {new Date(conversation.timestamp).toLocaleDateString()}
-                  </p>
-                </div>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    deleteConversation(conversation.id);
-                  }}
-                  className="text-zinc-500 hover:text-red-400 text-sm ml-2 rounded transition-colors focus:outline-none focus:ring-2 focus:ring-red-400 cursor-pointer"
-                >
-                  ×
-                </button>
+              <div className="flex-1 min-w-0 flex items-center gap-2">
+                {renamingId === conversation.id ? (
+                  <>
+                    <input
+                      value={renameValue}
+                      onChange={(e) => setRenameValue(e.target.value)}
+                      autoFocus
+                      className="text-slate-900 font-medium text-sm bg-slate-100 rounded px-2 py-1"
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") handleRenameSubmit();
+                        if (e.key === "Escape") setRenamingId(null);
+                      }}
+                    />
+                    <IconButton
+                      size="small"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleRenameSubmit();
+                      }}
+                      sx={{ ml: 0.5 }}
+                    >
+                      <Check fontSize="small" />
+                    </IconButton>
+                    <IconButton
+                      size="small"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setRenamingId(null);
+                      }}
+                      sx={{ ml: 0.5 }}
+                    >
+                      <Close fontSize="small" />
+                    </IconButton>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-slate-900 font-medium text-sm truncate">
+                      {conversation.title}
+                    </p>
+                    <IconButton
+                      size="small"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setRenamingId(conversation.id);
+                        setRenameValue(conversation.title);
+                      }}
+                      sx={{ ml: 0.5 }}
+                    >
+                      <Edit fontSize="small" />
+                    </IconButton>
+                  </>
+                )}
+                <p className="text-slate-500 text-xs font-medium mt-1">
+                  {new Date(conversation.timestamp).toLocaleDateString()}
+                </p>
               </div>
+              <IconButton
+                size="small"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleMenuOpen(e, conversation.id);
+                }}
+              >
+                <MoreVert fontSize="small" />
+              </IconButton>
             </div>
           ))}
+          <Menu
+            anchorEl={menuAnchorEl}
+            open={Boolean(menuAnchorEl)}
+            onClose={handleMenuClose}
+            anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+            transformOrigin={{ vertical: "top", horizontal: "right" }}
+          >
+            <MenuItem onClick={handleDelete}>
+              <Delete fontSize="small" className="mr-2" /> Delete
+            </MenuItem>
+          </Menu>
         </div>
       </aside>
 
@@ -713,25 +891,33 @@ const Chat = () => {
               {messages.map((msg) =>
                 msg.type === "pdf" ? (
                   <div key={msg.id} className="flex justify-start">
-                    <div className="flex items-center bg-zinc-900 rounded-xl px-4 py-2 w-fit border border-zinc-700">
-                      <FiPaperclip className="text-pink-400 mr-2" size={22} />
+                    <div className="flex items-center bg-white rounded-2xl px-6 py-4 w-fit border border-slate-200 shadow-sm">
+                      <AttachFile
+                        className="text-pink-500 mr-3"
+                        style={{ fontSize: 24 }}
+                      />
                       <div className="flex flex-col mr-4">
-                        <span className="text-white font-medium text-sm">
+                        <span className="text-slate-900 font-semibold text-sm">
                           {msg.fileName}
                         </span>
-                        <span className="text-zinc-400 text-xs">PDF</span>
+                        <span className="text-slate-500 text-xs font-medium">
+                          PDF Document
+                        </span>
                       </div>
                     </div>
                   </div>
                 ) : msg.type === "url" ? (
                   <div key={msg.id} className="flex justify-start">
-                    <div className="flex items-center bg-zinc-900 rounded-xl px-4 py-2 w-fit border border-zinc-700">
-                      <FiLink className="text-blue-400 mr-2" size={22} />
+                    <div className="flex items-center bg-white rounded-2xl px-6 py-4 w-fit border border-slate-200 shadow-sm">
+                      <Link
+                        className="text-blue-500 mr-3"
+                        style={{ fontSize: 24 }}
+                      />
                       <div className="flex flex-col mr-4">
-                        <span className="text-white font-medium text-sm">
+                        <span className="text-slate-900 font-semibold text-sm">
                           {msg.url}
                         </span>
-                        <span className="text-zinc-400 text-xs">
+                        <span className="text-slate-500 text-xs font-medium">
                           Web Content
                         </span>
                       </div>
@@ -814,24 +1000,29 @@ const Chat = () => {
           <div className="max-w-4xl mx-auto">
             <div className="flex items-end gap-3 bg-zinc-800 rounded-2xl p-4">
               {selectedFile && (
-                <div className="flex items-center mb-2 bg-zinc-900 rounded-xl px-4 py-2 w-fit border border-zinc-700">
-                  <FiPaperclip className="text-pink-400 mr-2" size={22} />
+                <div className="flex items-center mb-2 bg-white rounded-xl px-4 py-3 w-fit border border-slate-200 shadow-sm">
+                  <AttachFile
+                    className="text-pink-500 mr-3"
+                    style={{ fontSize: 22 }}
+                  />
                   <div className="flex flex-col mr-4">
-                    <span className="text-white font-medium text-sm">
+                    <span className="text-slate-900 font-semibold text-sm">
                       {selectedFile.name}
                     </span>
-                    <span className="text-zinc-400 text-xs">PDF</span>
+                    <span className="text-slate-500 text-xs font-medium">
+                      PDF
+                    </span>
                   </div>
                   <button
                     onClick={handleRemoveFile}
-                    className="ml-auto text-zinc-400 hover:text-white rounded-full focus:outline-none focus:ring-2 focus:ring-red-400 transition-colors cursor-pointer"
+                    className="ml-auto text-slate-400 hover:text-red-500 rounded-full p-1 focus:outline-none focus:ring-2 focus:ring-red-200 transition-all duration-200 cursor-pointer"
                     title="Remove file"
                   >
                     ×
                   </button>
                   <button
                     onClick={handleUploadSelectedFile}
-                    className="ml-4 bg-purple-700 hover:bg-purple-800 text-white px-3 py-1 rounded-lg text-xs font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer"
+                    className="ml-4 bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white px-4 py-2 rounded-lg text-xs font-semibold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-pink-500 cursor-pointer shadow-sm"
                     disabled={isUploading}
                   >
                     Upload
@@ -840,14 +1031,17 @@ const Chat = () => {
               )}
 
               {showUrlInput && (
-                <div className="flex items-center mb-2 bg-zinc-900 rounded-xl px-4 py-2 w-fit border border-zinc-700">
-                  <FiLink className="text-blue-400 mr-2" size={22} />
+                <div className="flex items-center mb-2 bg-white rounded-xl px-4 py-3 w-fit border border-slate-200 shadow-sm">
+                  <Link
+                    className="text-blue-500 mr-3"
+                    style={{ fontSize: 22 }}
+                  />
                   <input
                     type="url"
                     placeholder="Enter website URL..."
                     value={urlInput}
                     onChange={(e) => setUrlInput(e.target.value)}
-                    className="bg-transparent text-white text-sm outline-none border-none min-w-64"
+                    className="bg-transparent text-slate-900 text-sm outline-none border-none min-w-64 font-medium placeholder-slate-400"
                     onKeyPress={(e) => {
                       if (e.key === "Enter") {
                         handleUrlUpload();
@@ -859,14 +1053,14 @@ const Chat = () => {
                       setShowUrlInput(false);
                       setUrlInput("");
                     }}
-                    className="ml-2 text-zinc-400 hover:text-white rounded-full focus:outline-none focus:ring-2 focus:ring-red-400 transition-colors cursor-pointer"
+                    className="ml-2 text-slate-400 hover:text-red-500 rounded-full p-1 focus:outline-none focus:ring-2 focus:ring-red-200 transition-all duration-200 cursor-pointer"
                     title="Cancel"
                   >
                     ×
                   </button>
                   <button
                     onClick={handleUrlUpload}
-                    className="ml-4 bg-blue-700 hover:bg-blue-800 text-white px-3 py-1 rounded-lg text-xs font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+                    className="ml-4 bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white px-4 py-2 rounded-lg text-xs font-semibold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer shadow-sm"
                     disabled={isUrlUploading || !urlInput.trim()}
                   >
                     {isUrlUploading ? "Loading..." : "Load"}
@@ -896,40 +1090,40 @@ const Chat = () => {
               {/* URL upload button */}
               <button
                 onClick={handleUrlButtonClick}
-                className={`p-2 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-400 cursor-pointer ${
+                className={`p-3 rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-400 cursor-pointer ${
                   isUrlUploading
-                    ? "text-zinc-500 cursor-not-allowed"
+                    ? "text-slate-300 cursor-not-allowed"
                     : showUrlInput
-                    ? "text-blue-400 bg-blue-700"
-                    : "text-zinc-400 hover:text-white hover:bg-zinc-700"
+                    ? "text-blue-500 bg-blue-50"
+                    : "text-slate-500 hover:text-blue-500 hover:bg-blue-50"
                 }`}
                 title="Load Web Content"
               >
-                <FiLink size={20} />
+                <Link style={{ fontSize: 20 }} />
               </button>
 
               {/* File upload button */}
               <button
                 onClick={handleFileButtonClick}
-                className={`p-2 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-400 cursor-pointer ${
+                className={`p-3 rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-pink-400 cursor-pointer ${
                   isUploading
-                    ? "text-zinc-500 cursor-not-allowed"
-                    : "text-zinc-400 hover:text-white hover:bg-zinc-700"
+                    ? "text-slate-300 cursor-not-allowed"
+                    : "text-slate-500 hover:text-pink-500 hover:bg-pink-50"
                 }`}
                 title="Upload PDF"
               >
-                <FiPaperclip size={20} />
+                <AttachFile style={{ fontSize: 20 }} />
               </button>
 
               <button
                 onClick={handleSendMessage}
-                className={`p-2 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer ${
+                className={`p-3 rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer ${
                   isLoading || !message.trim()
-                    ? "text-zinc-500 cursor-not-allowed"
-                    : "text-white bg-purple-700 hover:bg-purple-800"
+                    ? "text-slate-300 cursor-not-allowed"
+                    : "text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-sm"
                 }`}
               >
-                <IoMdSend size={20} />
+                <Send style={{ fontSize: 20 }} />
               </button>
             </div>
           </div>
