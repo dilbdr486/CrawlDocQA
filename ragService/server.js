@@ -1,16 +1,16 @@
 import express from "express";
 import "dotenv/config";
 import { upload } from "./src/multer.js";
-import { loadPDF } from "./src/splitter.js";
+import { loadPDF, processAndStoreWebContent } from "./src/splitter.js";
 import { queryOrRespond } from "./src/tools.js";
-import {HumanMessage} from "@langchain/core/messages"
-import cors from "cors"
+import { HumanMessage } from "@langchain/core/messages";
+import cors from "cors";
 
 const app = express();
 const port = process.env.PORT;
 app.use(express.json());
 
-const allowedOrigins = ["http://localhost:5173","http://localhost:3000"];
+const allowedOrigins = ["http://localhost:5173", "http://localhost:3000"];
 
 app.use(
   cors({
@@ -19,7 +19,6 @@ app.use(
     credentials: true,
   })
 );
-
 
 app.post("/api/v1/upload", upload.single("pdf"), async (req, res) => {
   try {
@@ -70,6 +69,28 @@ app.post("/api/v1/query", async (req, res) => {
   } catch (error) {
     console.error("Error handling human message query:", error);
     res.status(500).json({ error: "Failed to process the query" });
+  }
+});
+
+app.post("/api/load-data", async (req, res) => {
+  const { url } = req.body;
+  if (!url) {
+    return res.status(400).json({ error: "URL is required" });
+  }
+
+  try {
+    console.log(`Processing and storing web content from ${url}...`);
+    const storedData = await processAndStoreWebContent(url);
+
+    console.log("Stored Data:", storedData);
+    res.status(200).json({
+      message: "Data successfully loaded into WeaviateDB",
+      storedData,
+      tagCounts: storedData.tagCounts,
+    });
+  } catch (error) {
+    console.error("Error processing and storing web content:", error);
+    res.status(500).json({ error: "Failed to load data into ChromaDB" });
   }
 });
 

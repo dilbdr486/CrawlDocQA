@@ -4,8 +4,11 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
 import { PDFLoader } from "@langchain/community/document_loaders/fs/pdf";
+import { CheerioWebBaseLoader } from "@langchain/community/document_loaders/web/cheerio";
 import { createWorker } from "tesseract.js";
 import pdfPoppler from "pdf-poppler";
+import axios from "axios";
+import { load } from "cheerio";
 import vectorStore from "./db.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -54,7 +57,9 @@ export const loadPDF = async (filePath) => {
     console.warn("⚠️ Image file detected. Using OCR...");
 
     const worker = await createWorker("eng");
-    const { data: { text } } = await worker.recognize(filePath);
+    const {
+      data: { text },
+    } = await worker.recognize(filePath);
     console.log(`✅ OCR Processed: ${path.basename(filePath)}`);
     await worker.terminate();
 
@@ -78,7 +83,9 @@ export const loadPDF = async (filePath) => {
     const worker = await createWorker("eng");
 
     for (const imagePath of imagePaths) {
-      const { data: { text } } = await worker.recognize(imagePath);
+      const {
+        data: { text },
+      } = await worker.recognize(imagePath);
       console.log(`✅ OCR Processed: ${path.basename(imagePath)}`);
       fullText += text + "\n";
     }
@@ -105,3 +112,73 @@ export const loadPDF = async (filePath) => {
 
   return allSplits;
 };
+
+// Function to extract links from a webpage
+async function extractLinksFromHomePage(url) {
+  try {
+    const response = await axios.get(url);
+    const $ = load(response.data);
+    const links = [];
+    $("li a").each((_, element) => {
+      const href = $(element).attr("href");
+      const text = $(element).text().trim();
+      if (href && !href.startsWith("#")) {
+        links.push({ text, href: new URL(href, url).href });
+      }
+    });
+    return links.slice(0, 10); // Limit to 10 links
+  } catch (error) {
+    throw new Error(`Failed to extract links from ${url}: ${error.message}`);
+  }
+}
+
+export async function processAndStoreWebContent(url) {
+  try {
+    console.log(`Fetching all content from: ${url}`);
+    const links = await extractLinksFromHomePage(url);
+    const allStoredDocs = [];
+    for (const { href } of links) {
+      console.log(`Processing content from link: ${href}`);
+      const selector =
+        "p, li, a, span, h1, h2, h3, h4, h5, h6, ul, ol, form, div, section, article, footer, header, aside, *";
+      const cheerioLoader = new CheerioWebBaseLoader(href, { selector });
+      const docs = await cheerioLoader.load();
+
+      if (docs.length === 0) {
+        console.error(`No content found on the page: ${href}`);
+        continue;
+      }
+
+      const textSplitter = new RecursiveCharacterTextSplitter({
+        chunkSize: 1000,
+        chunkOverlap: 200,
+      });
+
+      console.log("Splitting content into manageable chunks...");
+      const splitDocs = await textSplitter.splitDocuments(docs);
+      console.log(`Generated ${splitDocs.length} document chunks.`);
+
+      // Count the number of tags and extract text
+      const tagCounts = {};
+      docs.forEach((doc) => {
+        const content = doc.pageContent || "";
+        const matches = content.match(/<\s*\/?\s*([a-zA-Z0-9]+)[^>]*>/g) || [];
+        matches.forEach((tag) => {
+          const tagName = tag.replace(/<\/?|\/?>/g, "").split(" ")[0];
+          tagCounts[tagName] = (tagCounts[tagName] || 0) + 1;
+        });
+      });
+
+      console.log("Tag Counts:", tagCounts);
+
+      await vectorStore.addDocuments(splitDocs);
+      console.log(`Documents from ${href} stored in ChromaDB.`);
+      allStoredDocs.push(...splitDocs);
+    }
+
+    return allStoredDocs;
+  } catch (error) {
+    console.error("Error processing and storing web content:", error);
+    throw error;
+  }
+}
