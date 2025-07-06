@@ -17,6 +17,8 @@ import { appContext } from "../../store/storeContext";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { toast } from "react-toastify";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 // Improved helpers at the top-level, before the Chat component
 function isGenericAIResponse(aiText) {
@@ -302,7 +304,11 @@ const Chat = () => {
       // Send to backend using axios
       const response = await axios.post(
         `${ragServiceUrl}/api/v1/query`,
-        { message: message, userId: userData?._id },
+        {
+          message: message,
+          userId: userData?._id,
+          chatHistory: messages, // Send current chat history
+        },
         {
           headers: {
             "Content-Type": "application/json",
@@ -939,7 +945,15 @@ const Chat = () => {
                           : "bg-zinc-800 text-white"
                       }`}
                     >
-                      <div className="whitespace-pre-wrap">{msg.content}</div>
+                      {msg.type === "ai" ? (
+                        <div className="prose prose-invert prose-p:my-1 prose-li:my-1 prose-strong:font-bold prose-strong:text-white prose-ul:list-disc prose-ol:list-decimal prose-li:pl-2 prose-li:text-base prose-li:text-white prose-p:text-white prose-headings:text-white">
+                          <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                            {msg.content}
+                          </ReactMarkdown>
+                        </div>
+                      ) : (
+                        <div className="whitespace-pre-wrap">{msg.content}</div>
+                      )}
                       <div className="text-xs opacity-70 mt-2">
                         {new Date(msg.timestamp).toLocaleTimeString()}
                       </div>
