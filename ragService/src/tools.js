@@ -7,23 +7,55 @@ import {
 } from "@langchain/core/messages";
 import { model } from "../src/model.js";
 
-const retrieve = async ({ query }) => {
-  // console.log("Querying ChromaDB with:", query);
-  const retrievedDocs = await vectorStore.similaritySearch(query, 20);
-  // console.log("Retrieved Documents from ChromaDB:", retrievedDocs);
+function normalizeUserId(id) {
+  return (id ?? "").toString().trim();
+}
 
+const retrieve = async ({ query, userId }) => {
+  let filter = undefined;
+  if (userId) {
+    filter = {
+      operator: "Equal",
+      path: ["userId"],
+      valueText: userId,
+    };
+  }
+  const retrievedDocs = await vectorStore.similaritySearch(query, 20, filter);
+  console.log(
+    "Retrieved docs metadata:",
+    retrievedDocs.map((doc) => doc.metadata)
+  );
+  // Detailed comparison log
+  retrievedDocs.forEach((doc) => {
+    console.log(
+      "[UserId Compare] doc.metadata.userId:",
+      doc.metadata.userId,
+      "| userId:",
+      userId,
+      "| equal:",
+      normalizeUserId(doc.metadata.userId) === normalizeUserId(userId)
+    );
+  });
+  // Robust comparison
+  const mismatched = retrievedDocs.find(
+    (doc) => normalizeUserId(doc.metadata.userId) !== normalizeUserId(userId)
+  );
+  if (mismatched) {
+    throw new Error(
+      `Unauthorized access: Document with userId ${mismatched.metadata.userId} does not match requested userId ${userId}`
+    );
+  }
   const serializedDocs = retrievedDocs
     .map((doc) => `source: ${doc.metadata.source}\ncontent: ${doc.pageContent}`)
     .join("\n");
-
   return [serializedDocs, retrievedDocs];
 };
 
-export async function queryOrRespond(state) {
+export async function queryOrRespond(state, userId) {
   const query = state.messages[state.messages.length - 1]?.content || "";
   // console.log("Query for ChromaDB retrieval:", query);
 
-  const [retrievedContext] = await retrieve({ query });
+  const [retrievedContext] = await retrieve({ query, userId });
   // console.log("Retrieved Context from ChromaDB:", retrievedContext);
 
   const systemMessageContent =

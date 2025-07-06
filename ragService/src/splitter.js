@@ -44,7 +44,7 @@ const deleteFiles = async (filePaths) => {
 
 const isPDF = (filePath) => path.extname(filePath).toLowerCase() === ".pdf";
 
-export const loadPDF = async (filePath) => {
+export const loadPDF = async (filePath, userId) => {
   let docs = [];
 
   // If the file is a PDF
@@ -103,7 +103,15 @@ export const loadPDF = async (filePath) => {
   });
 
   const allSplits = await splitter.splitDocuments(docs);
-  await vectorStore.addDocuments(allSplits);
+  const splitsWithUser = allSplits.map((doc) => ({
+    ...doc,
+    metadata: { ...doc.metadata, userId },
+  }));
+  await vectorStore.addDocuments(splitsWithUser);
+  console.log(
+    "Stored PDF splits metadata:",
+    splitsWithUser.map((doc) => doc.metadata)
+  );
 
   // Delete the PDF file if it was processed
   await fs.unlink(filePath).catch((err) => {
@@ -132,7 +140,7 @@ async function extractLinksFromHomePage(url) {
   }
 }
 
-export async function processAndStoreWebContent(url) {
+export async function processAndStoreWebContent(url, userId) {
   try {
     console.log(`Fetching all content from: ${url}`);
     const links = await extractLinksFromHomePage(url);
@@ -156,6 +164,10 @@ export async function processAndStoreWebContent(url) {
 
       console.log("Splitting content into manageable chunks...");
       const splitDocs = await textSplitter.splitDocuments(docs);
+      const splitDocsWithUser = splitDocs.map((doc) => ({
+        ...doc,
+        metadata: { ...doc.metadata, userId },
+      }));
       console.log(`Generated ${splitDocs.length} document chunks.`);
 
       // Count the number of tags and extract text
@@ -171,9 +183,13 @@ export async function processAndStoreWebContent(url) {
 
       console.log("Tag Counts:", tagCounts);
 
-      await vectorStore.addDocuments(splitDocs);
+      await vectorStore.addDocuments(splitDocsWithUser);
+      console.log(
+        "Stored web splits metadata:",
+        splitDocsWithUser.map((doc) => doc.metadata)
+      );
       console.log(`Documents from ${href} stored in ChromaDB.`);
-      allStoredDocs.push(...splitDocs);
+      allStoredDocs.push(...splitDocsWithUser);
     }
 
     return allStoredDocs;
