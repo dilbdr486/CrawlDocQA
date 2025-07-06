@@ -1,6 +1,7 @@
 import { useContext, useEffect, useState, useRef } from "react";
 import { FiPaperclip } from "react-icons/fi";
 import { IoMdSend } from "react-icons/io";
+import { FiLink } from "react-icons/fi";
 import { appContext } from "../../store/storeContext";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
@@ -71,9 +72,12 @@ const Chat = () => {
   const [messages, setMessages] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [isUrlUploading, setIsUrlUploading] = useState(false);
   const [conversations, setConversations] = useState([]);
   const [currentConversationId, setCurrentConversationId] = useState(null);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [urlInput, setUrlInput] = useState("");
+  const [showUrlInput, setShowUrlInput] = useState(false);
   const fileInputRef = useRef(null);
   const messagesEndRef = useRef(null);
   const navigate = useNavigate();
@@ -466,6 +470,133 @@ const Chat = () => {
     }
   };
 
+  const handleUrlUpload = async () => {
+    if (!urlInput.trim()) {
+      toast.error("Please enter a valid URL");
+      return;
+    }
+
+    // Basic URL validation
+    try {
+      new URL(urlInput);
+    } catch {
+      toast.error("Please enter a valid URL");
+      return;
+    }
+
+    try {
+      setIsUrlUploading(true);
+
+      // Create new conversation if none exists
+      if (!currentConversationId) {
+        createNewConversation();
+      }
+
+      // Add URL chip message to chat
+      const urlChipMessage = {
+        id: Date.now().toString(),
+        type: "url",
+        url: urlInput,
+        timestamp: new Date().toISOString(),
+      };
+      const updatedMessages = [...messages, urlChipMessage];
+      setMessages(updatedMessages);
+      setConversations((prev) =>
+        prev.map((conv) =>
+          conv.id === currentConversationId
+            ? { ...conv, messages: updatedMessages }
+            : conv
+        )
+      );
+
+      // Send URL to backend
+      const response = await axios.post(
+        `${ragServiceUrl}/api/load-data`,
+        { url: urlInput },
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+          withCredentials: true,
+        }
+      );
+
+      // Add success message
+      const aiMessage = {
+        id: (Date.now() + 1).toString(),
+        type: "ai",
+        content: `✅`,
+        timestamp: new Date().toISOString(),
+      };
+
+      const finalMessages = [...updatedMessages, aiMessage];
+      const userFirstMessage = finalMessages.find(
+        (m) => m.type === "user"
+      )?.content;
+      const currentConv = conversations.find(
+        (conv) => conv.id === currentConversationId
+      );
+      if (
+        currentConv &&
+        (currentConv.title === "New Chat" || !currentConv.title)
+      ) {
+        let baseTitle;
+        if (isGenericAIResponse(aiMessage.content) && userFirstMessage) {
+          baseTitle = userFirstMessage;
+        } else {
+          baseTitle = aiMessage.content;
+        }
+        const sweetTitle = generateShortTitle(baseTitle, userFirstMessage);
+        updateConversationTitle(currentConversationId, sweetTitle);
+      }
+      setMessages(finalMessages);
+      setConversations((prev) =>
+        prev.map((conv) =>
+          conv.id === currentConversationId
+            ? { ...conv, messages: finalMessages }
+            : conv
+        )
+      );
+
+      // Clear URL input
+      setUrlInput("");
+      setShowUrlInput(false);
+      toast.success("Web content loaded successfully!");
+    } catch (error) {
+      console.error("Error uploading URL:", error);
+      toast.error(
+        error.response?.data?.error ||
+          "Failed to load web content. Please try again."
+      );
+      const errorMessage = {
+        id: Date.now().toString(),
+        type: "error",
+        content:
+          error.response?.data?.error ||
+          "Failed to load web content. Please try again.",
+        timestamp: new Date().toISOString(),
+      };
+      const updatedMessages = [...messages, errorMessage];
+      setMessages(updatedMessages);
+      setConversations((prev) =>
+        prev.map((conv) =>
+          conv.id === currentConversationId
+            ? { ...conv, messages: updatedMessages }
+            : conv
+        )
+      );
+    } finally {
+      setIsUrlUploading(false);
+    }
+  };
+
+  const handleUrlButtonClick = () => {
+    setShowUrlInput(!showUrlInput);
+    if (showUrlInput) {
+      setUrlInput("");
+    }
+  };
+
   if (loading)
     return (
       <div className="flex items-center justify-center h-screen bg-zinc-950">
@@ -592,6 +723,20 @@ const Chat = () => {
                       </div>
                     </div>
                   </div>
+                ) : msg.type === "url" ? (
+                  <div key={msg.id} className="flex justify-start">
+                    <div className="flex items-center bg-zinc-900 rounded-xl px-4 py-2 w-fit border border-zinc-700">
+                      <FiLink className="text-blue-400 mr-2" size={22} />
+                      <div className="flex flex-col mr-4">
+                        <span className="text-white font-medium text-sm">
+                          {msg.url}
+                        </span>
+                        <span className="text-zinc-400 text-xs">
+                          Web Content
+                        </span>
+                      </div>
+                    </div>
+                  </div>
                 ) : (
                   <div
                     key={msg.id}
@@ -693,6 +838,42 @@ const Chat = () => {
                   </button>
                 </div>
               )}
+
+              {showUrlInput && (
+                <div className="flex items-center mb-2 bg-zinc-900 rounded-xl px-4 py-2 w-fit border border-zinc-700">
+                  <FiLink className="text-blue-400 mr-2" size={22} />
+                  <input
+                    type="url"
+                    placeholder="Enter website URL..."
+                    value={urlInput}
+                    onChange={(e) => setUrlInput(e.target.value)}
+                    className="bg-transparent text-white text-sm outline-none border-none min-w-64"
+                    onKeyPress={(e) => {
+                      if (e.key === "Enter") {
+                        handleUrlUpload();
+                      }
+                    }}
+                  />
+                  <button
+                    onClick={() => {
+                      setShowUrlInput(false);
+                      setUrlInput("");
+                    }}
+                    className="ml-2 text-zinc-400 hover:text-white rounded-full focus:outline-none focus:ring-2 focus:ring-red-400 transition-colors cursor-pointer"
+                    title="Cancel"
+                  >
+                    ×
+                  </button>
+                  <button
+                    onClick={handleUrlUpload}
+                    className="ml-4 bg-blue-700 hover:bg-blue-800 text-white px-3 py-1 rounded-lg text-xs font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+                    disabled={isUrlUploading || !urlInput.trim()}
+                  >
+                    {isUrlUploading ? "Loading..." : "Load"}
+                  </button>
+                </div>
+              )}
+
               <textarea
                 placeholder="Type your message..."
                 value={message}
@@ -711,6 +892,21 @@ const Chat = () => {
                 onChange={handleFileUpload}
                 className="hidden"
               />
+
+              {/* URL upload button */}
+              <button
+                onClick={handleUrlButtonClick}
+                className={`p-2 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-400 cursor-pointer ${
+                  isUrlUploading
+                    ? "text-zinc-500 cursor-not-allowed"
+                    : showUrlInput
+                    ? "text-blue-400 bg-blue-700"
+                    : "text-zinc-400 hover:text-white hover:bg-zinc-700"
+                }`}
+                title="Load Web Content"
+              >
+                <FiLink size={20} />
+              </button>
 
               {/* File upload button */}
               <button
