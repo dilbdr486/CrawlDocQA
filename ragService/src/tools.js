@@ -53,19 +53,30 @@ const retrieve = async ({ query, userId }) => {
 
 export async function queryOrRespond(state, userId) {
   const query = state.messages[state.messages.length - 1]?.content || "";
-  // console.log("Query for ChromaDB retrieval:", query);
 
-  const [retrievedContext] = await retrieve({ query, userId });
-  // console.log("Retrieved Context from ChromaDB:", retrievedContext);
+  // Check if the query is a greeting
+  const greetingPattern =
+    /^(hi|hello|hey|good morning|good afternoon|good evening|greetings|sup|yo|what's up|howdy|hi there|hello there|hey there)\s*$/i;
+  const isGreeting = greetingPattern.test(query.trim());
+
+  let retrievedContext = "";
+
+  // Only retrieve documents if it's not a greeting
+  if (!isGreeting) {
+    const [context] = await retrieve({ query, userId });
+    retrievedContext = context;
+  }
 
   const systemMessageContent =
-    "You are an assistant for question-answering tasks. " +
-    "Use the following pieces of retrieved context to answer " +
-    "the question. If you don't know the answer, say that you " +
-    "cannot find the answer from ChromaDB. Use three sentences maximum " +
-    "and keep the answer concise." +
-    "\n\n" +
-    `${retrievedContext}`;
+    "You are a helpful AI assistant for question-answering tasks. " +
+    "Follow these guidelines:\n" +
+    "1. If the user ONLY greets you (just 'hi', 'hello', 'hey' without any question), respond warmly and ask how you can help them.\n" +
+    "2. If the user asks a question (even if it contains greeting words), provide an answer based on the retrieved context.\n" +
+    "3. For questions, use the retrieved context to provide accurate answers.\n" +
+    "4. If the context doesn't contain relevant information, say 'I don't have enough information to answer that question based on the available documents.'\n" +
+    "5. Keep responses concise but informative (2-4 sentences).\n" +
+    "6. Always be helpful and professional.\n\n" +
+    `${retrievedContext ? `Retrieved Context:\n${retrievedContext}` : ""}`;
 
   const conversationMessages = state.messages.filter(
     (message) =>
@@ -97,14 +108,15 @@ export async function generate(state) {
 
   const docsContent = toolMessages.map((doc) => doc.content).join("\n");
   const systemMessageContent =
-    "You are an assistant for question-answering tasks. " +
-    "Use the following pieces of retrieved context to answer " +
-    "the question. If you don't know the answer, say that you " +
-    "if can not find the answer from chromadb then say that i don't know" +
-    "don't know. Use three sentences maximum and keep the " +
-    "answer concise." +
-    "\n\n" +
-    `${docsContent}`;
+    "You are a helpful AI assistant for question-answering tasks. " +
+    "Follow these guidelines:\n" +
+    "1. If the user ONLY greets you (just 'hi', 'hello', 'hey' without any question), respond warmly and ask how you can help them.\n" +
+    "2. If the user asks a question (even if it contains greeting words), provide an answer based on the retrieved context.\n" +
+    "3. For questions, use the retrieved context to provide accurate answers.\n" +
+    "4. If the context doesn't contain relevant information, say 'I don't have enough information to answer that question based on the available documents.'\n" +
+    "5. Keep responses concise but informative (2-4 sentences).\n" +
+    "6. Always be helpful and professional.\n\n" +
+    `Retrieved Context:\n${docsContent}`;
 
   const conversationMessages = state.messages.filter(
     (message) =>
