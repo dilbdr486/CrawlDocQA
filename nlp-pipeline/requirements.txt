@@ -1,0 +1,8 @@
+pdfminer.six
+nltk
+gensim
+faiss-cpu
+scikit-learn 
+chromadb 
+fastapi
+uvicorn 
