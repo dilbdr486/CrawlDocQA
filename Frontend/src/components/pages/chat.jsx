@@ -499,7 +499,7 @@ const Chat = () => {
       setUploadProgress(100);
 
       // Check for blank/empty PDF
-      let aiContent = `✅ PDF "${selectedFile.name}" uploaded and processed successfully!`;
+      let aiContent = `PDF "${selectedFile.name}" uploaded and processed successfully!`;
       if (
         response.data.chunks.length === 0 ||
         (response.data.chunks.length === 1 &&
@@ -634,7 +634,7 @@ const Chat = () => {
       const aiMessage = {
         id: (Date.now() + 1).toString(),
         type: "ai",
-        content: `✅ uploaded and processed successfully!`,
+        content: `uploaded and processed successfully!`,
         timestamp: new Date().toISOString(),
       };
 
@@ -740,21 +740,21 @@ const Chat = () => {
     );
 
   return (
-    <div className="flex w-full h-screen bg-zinc-950">
+    <div className="flex w-full h-screen bg-gray-300">
       {/* Sidebar */}
-      <aside className="w-80 bg-zinc-900 border-r border-zinc-700 flex flex-col">
+      <aside className="w-80 min-h-full flex flex-col bg-gradient-to-b from-blue-900 via-blue-950 to-slate-900 shadow-xl">
         {/* New Chat Button */}
-        <div className="p-4 border-b border-zinc-700">
+        <div className="p-4 border-b border-blue-800">
           <button
             onClick={createNewConversation}
-            className="w-full bg-purple-700 hover:bg-purple-800 text-white font-medium px-4 py-3 rounded-lg transition-colors shadow-sm hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer"
+            className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold px-4 py-3 rounded-xl transition-all shadow-md focus:outline-none focus:ring-2 focus:ring-blue-400 cursor-pointer"
           >
             + New Chat
           </button>
         </div>
 
         {/* User Info */}
-        <div className="p-4 border-b border-zinc-700 flex items-center gap-3">
+        <div className="p-4 border-b border-blue-800 flex items-center gap-3 bg-blue-950/70">
           <img
             src={
               userData?.avatar ||
@@ -763,17 +763,17 @@ const Chat = () => {
               "https://via.placeholder.com/150"
             }
             alt="Avatar"
-            className="h-10 w-10 rounded-full object-cover"
+            className="h-11 w-11 rounded-full object-cover border-2 border-blue-700 shadow-sm"
           />
           <div className="flex-1">
-            <p className="text-white font-medium text-sm">
+            <p className="text-white font-semibold text-base truncate">
               {userData?.username || userData?.displayName || "Unknown User"}
             </p>
-            <p className="text-zinc-400 text-xs">AI Assistant</p>
+            <p className="text-blue-200 text-xs">AI Assistant</p>
           </div>
           <button
             onClick={() => setShowLogoutDialog(true)}
-            className="text-slate-500 hover:text-red-600 text-sm px-3 py-2 rounded-lg transition-all duration-200 hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-200 cursor-pointer font-medium flex items-center gap-2"
+            className="text-blue-300 hover:text-red-500 text-sm px-3 py-2 rounded-lg transition-all duration-200 hover:bg-red-50/10 focus:outline-none focus:ring-2 focus:ring-red-200 cursor-pointer font-medium flex items-center gap-2"
             title="Logout"
           >
             <Logout style={{ fontSize: 16 }} />
@@ -782,15 +782,15 @@ const Chat = () => {
         </div>
 
         {/* Conversations */}
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto bg-transparent">
           {conversations.map((conversation) => (
             <div
               key={conversation.id}
-              className={`p-4 border-b border-slate-200 cursor-pointer transition-all duration-200 hover:bg-white ${
+              className={`p-4 border-b border-blue-800 cursor-pointer transition-all duration-200 hover:bg-blue-800/40 ${
                 currentConversationId === conversation.id
-                  ? "bg-white shadow-sm"
+                  ? "bg-blue-800/60 shadow-inner"
                   : ""
-              } flex items-center justify-between`}
+              } flex items-center justify-between rounded-lg mx-2 my-2`}
               onClick={() => loadConversation(conversation.id)}
             >
               <div className="flex-1 min-w-0 flex items-center gap-2">
@@ -800,11 +800,12 @@ const Chat = () => {
                       value={renameValue}
                       onChange={(e) => setRenameValue(e.target.value)}
                       autoFocus
-                      className="text-slate-900 font-medium text-sm bg-slate-100 rounded px-2 py-1"
+                      className="text-blue-900 font-medium text-sm bg-blue-100 rounded px-2 py-1 focus:ring-2 focus:ring-blue-400 outline-none border-none mr-2"
                       onKeyDown={(e) => {
                         if (e.key === "Enter") handleRenameSubmit();
                         if (e.key === "Escape") setRenamingId(null);
                       }}
+                      style={{ minWidth: "80px" }}
                     />
                     <IconButton
                       size="small"
@@ -812,6 +813,7 @@ const Chat = () => {
                         e.stopPropagation();
                         handleRenameSubmit();
                       }}
+                      className="!p-1 ml-1 text-blue-500 hover:text-blue-700 bg-blue-100 hover:bg-blue-200 rounded-full transition-colors"
                       sx={{ ml: 0.5 }}
                     >
                       <Check fontSize="small" />
@@ -822,6 +824,7 @@ const Chat = () => {
                         e.stopPropagation();
                         setRenamingId(null);
                       }}
+                      className="!p-1 ml-1 text-red-400 hover:text-red-600 bg-blue-100 hover:bg-red-100 rounded-full transition-colors"
                       sx={{ ml: 0.5 }}
                     >
                       <Close fontSize="small" />
@@ -829,7 +832,7 @@ const Chat = () => {
                   </>
                 ) : (
                   <>
-                    <p className="text-slate-900 font-medium text-sm truncate">
+                    <p className="text-blue-100 font-medium text-sm truncate">
                       {conversation.title}
                     </p>
                     <IconButton
@@ -841,43 +844,43 @@ const Chat = () => {
                       }}
                       sx={{ ml: 0.5 }}
                     >
-                      <Edit fontSize="small" />
+                      <Edit fontSize="small" className="text-blue-300" />
                     </IconButton>
+                    <p className="text-blue-300 text-xs font-medium mt-1">
+                      {new Date(conversation.timestamp).toLocaleDateString()}
+                    </p>
                   </>
                 )}
-                <p className="text-slate-500 text-xs font-medium mt-1">
-                  {new Date(conversation.timestamp).toLocaleDateString()}
-                </p>
+                <IconButton
+                  size="small"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleMenuOpen(e, conversation.id);
+                  }}
+                >
+                  <MoreVert fontSize="small" className="text-blue-300" />
+                </IconButton>
               </div>
-              <IconButton
-                size="small"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleMenuOpen(e, conversation.id);
-                }}
+              <Menu
+                anchorEl={menuAnchorEl}
+                open={Boolean(menuAnchorEl)}
+                onClose={handleMenuClose}
+                anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+                transformOrigin={{ vertical: "top", horizontal: "right" }}
               >
-                <MoreVert fontSize="small" />
-              </IconButton>
+                <MenuItem onClick={handleDelete} className="text-red-600">
+                  <Delete fontSize="small" className="mr-2" /> Delete
+                </MenuItem>
+              </Menu>
             </div>
           ))}
-          <Menu
-            anchorEl={menuAnchorEl}
-            open={Boolean(menuAnchorEl)}
-            onClose={handleMenuClose}
-            anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
-            transformOrigin={{ vertical: "top", horizontal: "right" }}
-          >
-            <MenuItem onClick={handleDelete}>
-              <Delete fontSize="small" className="mr-2" /> Delete
-            </MenuItem>
-          </Menu>
         </div>
       </aside>
 
       {/* Main Chat Area */}
-      <main className="flex-1 flex flex-col">
+      <main className="flex-1 flex flex-col bg-gradient-to-br from-slate-100 to-slate-200 border-l border-slate-300 shadow-inner">
         {/* Messages */}
-        <div className="flex-1 overflow-y-auto p-6">
+        <div className="flex-1 overflow-y-auto p-8">
           {messages.length === 0 ? (
             <div className="flex items-center justify-center h-full">
               <div className="text-center text-zinc-400">
@@ -904,74 +907,134 @@ const Chat = () => {
               </div>
             </div>
           ) : (
-            <div className="space-y-6">
-              {messages.map((msg) =>
-                msg.type === "pdf" ? (
-                  <div key={msg.id} className="flex justify-start">
-                    <div className="flex items-center bg-white rounded-2xl px-6 py-4 w-fit border border-slate-200 shadow-sm">
-                      <AttachFile
-                        className="text-pink-500 mr-3"
-                        style={{ fontSize: 24 }}
-                      />
-                      <div className="flex flex-col mr-4">
-                        <span className="text-slate-900 font-semibold text-sm">
-                          {msg.fileName}
-                        </span>
-                        <span className="text-slate-500 text-xs font-medium">
-                          PDF Document
-                        </span>
+            <div className="space-y-7">
+              {messages.map((msg) => {
+                // Detect file/web upload success
+                const isFileSuccess =
+                  msg.type === "ai" &&
+                  (msg.content.startsWith("PDF") ||
+                    msg.content.startsWith("The uploaded file"));
+                const isWebSuccess =
+                  msg.type === "ai" &&
+                  msg.content.trim() === "uploaded and processed successfully!";
+
+                if (msg.type === "pdf") {
+                  return (
+                    <div key={msg.id} className="flex justify-start">
+                      <div className="flex items-center bg-white rounded-2xl px-6 py-4 w-fit border border-slate-200 shadow-sm">
+                        <AttachFile
+                          className="text-pink-500 mr-3"
+                          style={{ fontSize: 24 }}
+                        />
+                        <div className="flex flex-col mr-4">
+                          <span className="text-slate-900 font-semibold text-sm">
+                            {msg.fileName}
+                          </span>
+                          <span className="text-slate-500 text-xs font-medium">
+                            PDF Document
+                          </span>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ) : msg.type === "url" ? (
-                  <div key={msg.id} className="flex justify-start">
-                    <div className="flex items-center bg-white rounded-2xl px-6 py-4 w-fit border border-slate-200 shadow-sm">
-                      <Link
-                        className="text-blue-500 mr-3"
-                        style={{ fontSize: 24 }}
-                      />
-                      <div className="flex flex-col mr-4">
-                        <span className="text-slate-900 font-semibold text-sm">
-                          {msg.url}
-                        </span>
-                        <span className="text-slate-500 text-xs font-medium">
-                          Web Content
-                        </span>
+                  );
+                } else if (msg.type === "url") {
+                  return (
+                    <div key={msg.id} className="flex justify-start">
+                      <div className="flex items-center bg-white rounded-2xl px-6 py-4 w-fit border border-slate-200 shadow-sm">
+                        <Link
+                          className="text-blue-500 mr-3"
+                          style={{ fontSize: 24 }}
+                        />
+                        <div className="flex flex-col mr-4">
+                          <span className="text-slate-900 font-semibold text-sm">
+                            {msg.url}
+                          </span>
+                          <span className="text-slate-500 text-xs font-medium">
+                            Web Content
+                          </span>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ) : (
-                  <div
-                    key={msg.id}
-                    className={`flex ${
-                      msg.type === "user" ? "justify-end" : "justify-start"
-                    }`}
-                  >
+                  );
+                } else if (isFileSuccess) {
+                  // File upload success card
+                  return (
+                    <div key={msg.id} className="flex justify-start">
+                      <div className="flex items-center bg-white rounded-2xl px-6 py-4 w-fit border border-green-200 shadow-sm">
+                        <span className="text-green-500 mr-3 text-2xl"></span>
+                        <div className="flex flex-col mr-4">
+                          <span className="text-slate-900 font-semibold text-sm">
+                            {msg.content}
+                          </span>
+                          <span className="text-green-500 text-xs font-medium">
+                            PDF Upload
+                          </span>
+                        </div>
+                        <div className="text-xs opacity-60 mt-1 text-right">
+                          {new Date(msg.timestamp).toLocaleTimeString()}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                } else if (isWebSuccess) {
+                  // Web upload success card
+                  return (
+                    <div key={msg.id} className="flex justify-start">
+                      <div className="flex items-center bg-white rounded-2xl px-6 py-4 w-fit border border-blue-200 shadow-sm">
+                        <span className="text-blue-500 mr-3 text-2xl"></span>
+                        <div className="flex flex-col mr-4">
+                          <span className="text-slate-900 font-semibold text-sm">
+                            {msg.content}
+                          </span>
+                          <span className="text-blue-500 text-xs font-medium">
+                            Web Content Upload
+                          </span>
+                        </div>
+                        <div className="text-xs opacity-60 mt-1 text-right">
+                          {new Date(msg.timestamp).toLocaleTimeString()}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                } else {
+                  // Default chat bubble for user, ai, error
+                  return (
                     <div
-                      className={`max-w-3xl px-6 py-4 rounded-2xl ${
-                        msg.type === "user"
-                          ? "bg-purple-700 text-white"
-                          : msg.type === "error"
-                          ? "bg-red-700 text-white"
-                          : "bg-zinc-800 text-white"
+                      key={msg.id}
+                      className={`flex items-center gap-3 ${
+                        msg.type === "user" ? "justify-end" : "justify-start"
                       }`}
                     >
-                      {msg.type === "ai" ? (
-                        <div className="prose prose-invert prose-p:my-1 prose-li:my-1 prose-strong:font-bold prose-strong:text-white prose-ul:list-disc prose-ol:list-decimal prose-li:pl-2 prose-li:text-base prose-li:text-white prose-p:text-white prose-headings:text-white">
-                          <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                      {/* Avatar removed for both AI and user */}
+                      {/* Message text */}
+                      <div
+                        className={
+                          msg.type === "user"
+                            ? "bg-blue-100 text-blue-900 font-medium px-6 py-4 text-base max-w-xl text-right shadow-md rounded-2xl"
+                            : msg.type === "error"
+                            ? "bg-red-100 text-red-700 font-medium px-6 py-4 text-base max-w-xl text-left shadow rounded-2xl"
+                            : "bg-white text-slate-900 font-medium px-6 py-4 text-base max-w-xl text-left shadow rounded-2xl"
+                        }
+                      >
+                        {msg.type === "ai" ? (
+                          <div>
+                            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                              {msg.content}
+                            </ReactMarkdown>
+                          </div>
+                        ) : (
+                          <div className="whitespace-pre-wrap">
                             {msg.content}
-                          </ReactMarkdown>
+                          </div>
+                        )}
+                        <div className="text-xs text-slate-400 mt-2 text-right">
+                          {new Date(msg.timestamp).toLocaleTimeString()}
                         </div>
-                      ) : (
-                        <div className="whitespace-pre-wrap">{msg.content}</div>
-                      )}
-                      <div className="text-xs opacity-70 mt-2">
-                        {new Date(msg.timestamp).toLocaleTimeString()}
                       </div>
                     </div>
-                  </div>
-                )
-              )}
+                  );
+                }
+              })}
               {isLoading && (
                 <div className="flex justify-start">
                   <div className="bg-zinc-800 text-white px-6 py-4 rounded-2xl max-w-3xl">
@@ -1015,39 +1078,67 @@ const Chat = () => {
                   </div>
                 </div>
               )}
+              {isUrlUploading && (
+                <div className="flex justify-start">
+                  <div className="bg-zinc-800 text-white px-6 py-4 rounded-2xl max-w-3xl">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                      <div>
+                        <div className="text-sm font-medium">
+                          Loading web content...
+                        </div>
+                        <div className="w-48 bg-zinc-700 rounded-full h-2 mt-2">
+                          <div
+                            className="bg-blue-500 h-2 rounded-full transition-all duration-300"
+                            style={{ width: `80%` }}
+                          ></div>
+                        </div>
+                        <div className="text-xs text-zinc-400 mt-1">
+                          Please wait
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
               <div ref={messagesEndRef} />
             </div>
           )}
         </div>
 
         {/* Input Section */}
-        <div className="p-6 border-t border-zinc-700 bg-zinc-900">
+        <div className="p-3 border-t border-blue-900 bg-blue-950 shadow-t-lg">
           <div className="max-w-4xl mx-auto">
-            <div className="flex items-end gap-3 bg-zinc-800 rounded-2xl p-4">
+            <div className="flex items-end gap-2 bg-blue-900/80 rounded-xl p-2 h-14 min-h-0 border border-blue-800 shadow-md">
               {selectedFile && (
-                <div className="flex items-center mb-2 bg-white rounded-xl px-4 py-3 w-fit border border-slate-200 shadow-sm">
+                <div
+                  className="flex items-center bg-white rounded-xl px-2 w-fit border border-slate-200 shadow-sm h-10"
+                  style={{ minHeight: "2.5rem", height: "2.5rem" }}
+                >
                   <AttachFile
-                    className="text-pink-500 mr-3"
-                    style={{ fontSize: 22 }}
+                    className="text-pink-500 mr-2"
+                    style={{ fontSize: 20 }}
                   />
-                  <div className="flex flex-col mr-4">
-                    <span className="text-slate-900 font-semibold text-sm">
+                  <div className="flex flex-col mr-2 justify-center h-full">
+                    <span className="text-slate-900 font-semibold text-sm leading-tight">
                       {selectedFile.name}
                     </span>
-                    <span className="text-slate-500 text-xs font-medium">
+                    <span className="text-slate-500 text-xs font-medium leading-tight">
                       PDF
                     </span>
                   </div>
                   <button
                     onClick={handleRemoveFile}
-                    className="ml-auto text-slate-400 hover:text-red-500 rounded-full p-1 focus:outline-none focus:ring-2 focus:ring-red-200 transition-all duration-200 cursor-pointer"
+                    className="ml-auto text-slate-400 hover:text-red-500 rounded-full p-1 focus:outline-none focus:ring-2 focus:ring-red-200 transition-all duration-200 cursor-pointer h-8 w-8 flex items-center justify-center"
                     title="Remove file"
+                    style={{ height: "2rem", width: "2rem" }}
                   >
                     ×
                   </button>
                   <button
                     onClick={handleUploadSelectedFile}
-                    className="ml-4 bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white px-4 py-2 rounded-lg text-xs font-semibold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-pink-500 cursor-pointer shadow-sm"
+                    className="ml-2 bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white px-3 py-1 rounded-lg text-xs font-semibold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-pink-500 cursor-pointer shadow-sm h-8"
+                    style={{ height: "2rem" }}
                     disabled={isUploading}
                   >
                     Upload
@@ -1056,17 +1147,21 @@ const Chat = () => {
               )}
 
               {showUrlInput && (
-                <div className="flex items-center mb-2 bg-white rounded-xl px-4 py-3 w-fit border border-slate-200 shadow-sm">
+                <div
+                  className="flex items-center bg-white rounded-xl px-2 w-fit border border-slate-200 shadow-sm h-10"
+                  style={{ minHeight: "2.5rem", height: "2.5rem" }}
+                >
                   <Link
-                    className="text-blue-500 mr-3"
-                    style={{ fontSize: 22 }}
+                    className="text-blue-500 mr-2"
+                    style={{ fontSize: 20 }}
                   />
                   <input
                     type="url"
                     placeholder="Enter website URL..."
                     value={urlInput}
                     onChange={(e) => setUrlInput(e.target.value)}
-                    className="bg-transparent text-slate-900 text-sm outline-none border-none min-w-64 font-medium placeholder-slate-400"
+                    className="bg-transparent text-slate-900 text-sm outline-none border-none min-w-48 font-medium placeholder-slate-400 h-full"
+                    style={{ height: "100%" }}
                     onKeyPress={(e) => {
                       if (e.key === "Enter") {
                         handleUrlUpload();
@@ -1078,14 +1173,16 @@ const Chat = () => {
                       setShowUrlInput(false);
                       setUrlInput("");
                     }}
-                    className="ml-2 text-slate-400 hover:text-red-500 rounded-full p-1 focus:outline-none focus:ring-2 focus:ring-red-200 transition-all duration-200 cursor-pointer"
+                    className="ml-1 text-slate-400 hover:text-red-500 rounded-full p-1 focus:outline-none focus:ring-2 focus:ring-red-200 transition-all duration-200 cursor-pointer h-8 w-8 flex items-center justify-center"
                     title="Cancel"
+                    style={{ height: "2rem", width: "2rem" }}
                   >
                     ×
                   </button>
                   <button
                     onClick={handleUrlUpload}
-                    className="ml-4 bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white px-4 py-2 rounded-lg text-xs font-semibold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer shadow-sm"
+                    className="ml-2 bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white px-3 py-1 rounded-lg text-xs font-semibold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer shadow-sm h-8"
+                    style={{ height: "2rem" }}
                     disabled={isUrlUploading || !urlInput.trim()}
                   >
                     {isUrlUploading ? "Loading..." : "Load"}
@@ -1098,9 +1195,9 @@ const Chat = () => {
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
                 onKeyPress={handleKeyPress}
-                className="flex-1 bg-transparent text-white resize-none outline-none border-none text-sm"
+                className="flex-1 bg-transparent text-white resize-none outline-none border-none text-sm h-8 min-h-0 py-1 placeholder-blue-200"
                 rows="1"
-                style={{ minHeight: "24px", maxHeight: "120px" }}
+                style={{ minHeight: "24px", maxHeight: "60px" }}
               />
 
               {/* Hidden file input */}
@@ -1115,40 +1212,40 @@ const Chat = () => {
               {/* URL upload button */}
               <button
                 onClick={handleUrlButtonClick}
-                className={`p-3 rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-400 cursor-pointer ${
+                className={`p-2 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-400 cursor-pointer ${
                   isUrlUploading
-                    ? "text-slate-300 cursor-not-allowed"
+                    ? "text-blue-300 cursor-not-allowed"
                     : showUrlInput
-                    ? "text-blue-500 bg-blue-50"
-                    : "text-slate-500 hover:text-blue-500 hover:bg-blue-50"
+                    ? "text-blue-400 bg-blue-100/10 border border-blue-400"
+                    : "text-blue-200 hover:text-blue-400 hover:bg-blue-800/40"
                 }`}
                 title="Load Web Content"
               >
-                <Link style={{ fontSize: 20 }} />
+                <Link style={{ fontSize: 18 }} />
               </button>
 
               {/* File upload button */}
               <button
                 onClick={handleFileButtonClick}
-                className={`p-3 rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-pink-400 cursor-pointer ${
+                className={`p-2 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-400 cursor-pointer ${
                   isUploading
-                    ? "text-slate-300 cursor-not-allowed"
-                    : "text-slate-500 hover:text-pink-500 hover:bg-pink-50"
+                    ? "text-blue-300 cursor-not-allowed"
+                    : "text-blue-200 hover:text-blue-400 hover:bg-blue-800/40"
                 }`}
                 title="Upload PDF"
               >
-                <AttachFile style={{ fontSize: 20 }} />
+                <AttachFile style={{ fontSize: 18 }} />
               </button>
 
               <button
                 onClick={handleSendMessage}
-                className={`p-3 rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer ${
+                className={`p-2 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer ${
                   isLoading || !message.trim()
-                    ? "text-slate-300 cursor-not-allowed"
+                    ? "text-blue-300 cursor-not-allowed"
                     : "text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-sm"
                 }`}
               >
-                <Send style={{ fontSize: 20 }} />
+                <Send style={{ fontSize: 18 }} />
               </button>
             </div>
           </div>
@@ -1157,18 +1254,18 @@ const Chat = () => {
 
       {/* Confirmation Dialog */}
       {showLogoutDialog && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="bg-zinc-900 rounded-2xl p-8 shadow-lg border border-zinc-700 w-full max-w-sm">
-            <h3 className="text-lg font-semibold text-white mb-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-80 font-sans">
+          <div className="bg-gradient-to-br from-gray-900 via-gray-800 to-gray-700 border border-zinc-800 rounded-2xl shadow-2xl p-8 w-full max-w-sm">
+            <h3 className="text-lg font-semibold text-gray-100 mb-2">
               Confirm Logout
             </h3>
-            <p className="text-zinc-300 mb-6">
+            <p className="text-gray-300 mb-6">
               Are you sure you want to logout?
             </p>
             <div className="flex justify-end gap-3">
               <button
                 onClick={() => setShowLogoutDialog(false)}
-                className="px-4 py-2 rounded-lg bg-zinc-700 text-white hover:bg-zinc-600 transition-colors focus:outline-none focus:ring-2 focus:ring-zinc-400 cursor-pointer"
+                className="px-5 py-2 rounded-lg bg-zinc-700 text-gray-200 hover:bg-zinc-600 transition-all font-medium"
               >
                 Cancel
               </button>
@@ -1177,7 +1274,7 @@ const Chat = () => {
                   setShowLogoutDialog(false);
                   handleLogout();
                 }}
-                className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors focus:outline-none focus:ring-2 focus:ring-red-400 cursor-pointer"
+                className="px-5 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 transition-all font-semibold shadow"
               >
                 Logout
               </button>

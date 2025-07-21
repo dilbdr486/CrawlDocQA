@@ -54,32 +54,40 @@ function Register() {
   };
 
   return (
-    <div className="flex justify-center items-center flex-col h-screen w-screen bg-black text-white px-4">
-      <div className="w-full max-w-md p-8 bg-zinc-900 shadow-lg rounded-2xl border border-zinc-700">
-        <div className="flex flex-col items-center gap-2 mb-6">
-          <h2 className="text-xl font-semibold">Register</h2>
+    <div
+      className="flex justify-center items-center flex-col h-screen w-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-700 text-gray-100 px-4 font-sans"
+      style={{ fontFamily: "Inter, Segoe UI, Arial, sans-serif" }}
+    >
+      <div className="w-full max-w-md p-10 bg-zinc-950 shadow-2xl rounded-3xl border border-zinc-800">
+        <div className="flex flex-col items-center gap-2 mb-8">
+          <h2
+            className="text-2xl font-bold tracking-tight text-blue-400"
+            style={{ letterSpacing: "0.02em" }}
+          >
+            Register
+          </h2>
         </div>
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-5">
           <input
             type="email"
-            placeholder="Enter your email..."
-            className="w-full p-3 rounded-md bg-zinc-800 text-white border border-zinc-600 focus:outline-none focus:ring-2 focus:ring-primary"
+            placeholder="Enter your email"
+            className="w-full p-3 rounded-lg bg-zinc-900 text-gray-100 border border-zinc-700 focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder-gray-400 transition-all duration-150"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
           />
           <input
-            placeholder="Enter your username..."
-            className="w-full p-3 rounded-md bg-zinc-800 text-white border border-zinc-600 focus:outline-none focus:ring-2 focus:ring-primary"
+            placeholder="Enter your username"
+            className="w-full p-3 rounded-lg bg-zinc-900 text-gray-100 border border-zinc-700 focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder-gray-400 transition-all duration-150"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             required
           />
           <input
             type="password"
-            placeholder="Enter your password..."
-            className="w-full p-3 rounded-md bg-zinc-800 text-white border border-zinc-600 focus:outline-none focus:ring-2 focus:ring-primary"
+            placeholder="Enter your password"
+            className="w-full p-3 rounded-lg bg-zinc-900 text-gray-100 border border-zinc-700 focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder-gray-400 transition-all duration-150"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
@@ -87,32 +95,35 @@ function Register() {
 
           <button
             type="submit"
-            className="w-full bg-blue-600 hover:bg-blue-700 transition-all text-white py-3 rounded-lg hover:cursor-pointer"
+            className="w-full bg-blue-500 hover:bg-blue-600 transition-all text-white py-3 rounded-xl font-semibold shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-300 focus:ring-offset-2"
           >
             continue
           </button>
         </form>
 
         {/* Divider */}
-        <div className="flex items-center my-4">
-          <hr className="flex-grow border-zinc-700" />
-          <span className="px-3 text-sm text-zinc-400">OR</span>
-          <hr className="flex-grow border-zinc-700" />
+        <div className="flex items-center my-6">
+          <hr className="flex-grow border-zinc-800" />
+          <span className="px-3 text-sm text-zinc-400 font-medium">OR</span>
+          <hr className="flex-grow border-zinc-800" />
         </div>
 
         {/* Google Sign-In */}
         <button
           onClick={onGoogleHandler}
-          className="w-full flex items-center justify-center gap-2 bg-white text-black font-medium py-3 rounded-lg hover:bg-zinc-200 transition-all hover:cursor-pointer"
+          className="w-full flex items-center justify-center gap-2 bg-white text-gray-900 font-semibold py-3 rounded-xl hover:bg-blue-50 transition-all hover:cursor-pointer shadow-sm border border-zinc-200"
         >
-          <FcGoogle className="text-xl" />
+          <FcGoogle className="text-2xl" />
           Sign up with Google
         </button>
 
         {/* Login Link */}
-        <p className="text-center text-sm mt-6 text-zinc-300">
+        <p className="text-center text-sm mt-8 text-zinc-400">
           Already have an account?{" "}
-          <Link to="/login" className="text-blue-500 hover:underline">
+          <Link
+            to="/login"
+            className="text-blue-400 hover:underline font-medium"
+          >
             Login
           </Link>
         </p>
