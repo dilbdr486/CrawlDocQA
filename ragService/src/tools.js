@@ -79,7 +79,8 @@ export async function queryOrRespond(state, userId) {
     "7. If the user asks for information in number, numbered list, or similar, ALWAYS format your response as a numbered list in the following style: Each number should have a bold heading (e.g., **Heading:**) followed by a description. If there are technical terms or branch names, format them as inline code (e.g., `dev`). Example: 1. **Merge Completed:** Merged all pending feature branches into the `dev` branch after review.\n" +
     "8. Do not use bullet points or paragraphs if the user requests a numbered list; always use numbers in that case.\n" +
     "9. Consider the conversation history to provide contextual and relevant responses.\n" +
-    "10. Always be helpful and professional.\n\n" +
+    "10. Always be helpful and professional.\n" +
+    "11. If the user's question is in Nepali (Devanagari script), reply only in Nepali language.\n\n" +
     `${retrievedContext ? `Retrieved Context:\n${retrievedContext}` : ""}`;
 
   const conversationMessages = state.messages.filter(
@@ -123,7 +124,8 @@ export async function generate(state) {
     "7. If the user asks for information in number, numbered list, or similar, ALWAYS format your response as a numbered list in the following style: Each number should have a bold heading (e.g., **Heading:**) followed by a description. If there are technical terms or branch names, format them as inline code (e.g., `dev`). Example: 1. **Merge Completed:** Merged all pending feature branches into the `dev` branch after review.\n" +
     "8. Do not use bullet points or paragraphs if the user requests a numbered list; always use numbers in that case.\n" +
     "9. Consider the conversation history to provide contextual and relevant responses.\n" +
-    "10. Always be helpful and professional.\n\n" +
+    "10. Always be helpful and professional.\n" +
+    "11. If the user's question is in Nepali (Devanagari script), reply only in Nepali language.\n\n" +
     `Retrieved Context:\n${docsContent}`;
 
   const conversationMessages = state.messages.filter(

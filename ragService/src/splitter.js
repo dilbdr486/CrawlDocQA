@@ -44,6 +44,26 @@ const deleteFiles = async (filePaths) => {
 
 const isPDF = (filePath) => path.extname(filePath).toLowerCase() === ".pdf";
 
+// Simple Nepali language detector (checks for Devanagari Unicode block)
+function isNepaliText(text) {
+  // Nepali uses Devanagari: \u0900-\u097F
+  return /[\u0900-\u097F]/.test(text);
+}
+
+// Sanitize metadata keys for Weaviate compatibility
+function sanitizeMetadataKeys(obj) {
+  if (typeof obj !== "object" || obj === null) return obj;
+  if (Array.isArray(obj)) return obj.map(sanitizeMetadataKeys);
+  const sanitized = {};
+  for (const key in obj) {
+    // Only allow [_A-Za-z][_0-9A-Za-z]{0,230}
+    let newKey = key.replace(/[^_0-9A-Za-z]/g, "_");
+    if (!/^[_A-Za-z]/.test(newKey)) newKey = "_" + newKey;
+    sanitized[newKey] = sanitizeMetadataKeys(obj[key]);
+  }
+  return sanitized;
+}
+
 export const loadPDF = async (filePath, userId) => {
   let docs = [];
 
@@ -103,10 +123,18 @@ export const loadPDF = async (filePath, userId) => {
   });
 
   const allSplits = await splitter.splitDocuments(docs);
-  const splitsWithUser = allSplits.map((doc) => ({
-    ...doc,
-    metadata: { ...doc.metadata, userId },
-  }));
+  const splitsWithUser = allSplits.map((doc) => {
+    const isNepali = isNepaliText(doc.pageContent);
+    const metadata = {
+      ...doc.metadata,
+      userId,
+      ...(isNepali ? { language: "ne" } : {}),
+    };
+    return {
+      ...doc,
+      metadata: sanitizeMetadataKeys(metadata),
+    };
+  });
   await vectorStore.addDocuments(splitsWithUser);
   console.log(
     "Stored PDF splits metadata:",
@@ -164,10 +192,18 @@ export async function processAndStoreWebContent(url, userId) {
 
       console.log("Splitting content into manageable chunks...");
       const splitDocs = await textSplitter.splitDocuments(docs);
-      const splitDocsWithUser = splitDocs.map((doc) => ({
-        ...doc,
-        metadata: { ...doc.metadata, userId },
-      }));
+      const splitDocsWithUser = splitDocs.map((doc) => {
+        const isNepali = isNepaliText(doc.pageContent);
+        const metadata = {
+          ...doc.metadata,
+          userId,
+          ...(isNepali ? { language: "ne" } : {}),
+        };
+        return {
+          ...doc,
+          metadata: sanitizeMetadataKeys(metadata),
+        };
+      });
       console.log(`Generated ${splitDocs.length} document chunks.`);
 
       // Count the number of tags and extract text
