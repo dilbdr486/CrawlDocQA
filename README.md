@@ -2,6 +2,8 @@
 
 A comprehensive document question-answering system that allows users to upload PDFs, crawl web content, and ask questions about the documents using AI-powered retrieval-augmented generation (RAG).
 
+**Live Frontend Only:** https://dil-crawl-doc-qa-final-project.vercel.app/
+
 ## 🏗️ Architecture
 
 This project consists of four main components:
