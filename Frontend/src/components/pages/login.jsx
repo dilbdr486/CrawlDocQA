@@ -10,8 +10,9 @@ function Login() {
   const navigate = useNavigate();
 
   const [data, setData] = useState({
-    email: "",
-    password: "",
+    // if you want to actual login with backend then remove this and use empty string
+    email: "admin@gmail.com",
+    password: "admin123",
   });
 
   const onChangeHandler = (event) => {
@@ -23,40 +24,48 @@ function Login() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    try {
-      const response = await axios.post(
-        `${backendUrl}/api/v1/login`,
-        {
-          email: data.email,
-          password: data.password,
-        },
-        { withCredentials: true }
-      );
+    // if you want to actual login with backend then remove the if condition and use the try catch block
 
-      if (response.data.success) {
-        toast.success("Login successful!");
-        setIsLoggedIn(true);
-        navigate("/Chat", { replace: true });
-      } else {
-        toast.error(response.data.message || "Login failed.");
-        console.error("Login failed:", response.data.message);
-      }
-    } catch (error) {
-      if (error.response) {
-        const status = error.response.status;
-        if (status === 401) {
-          toast.error("Incorrect password. Please try again.");
-        } else if (status === 404) {
-          toast.error("User not found. Please check your email or register.");
-        } else if (status === 400) {
-          toast.error("User is already logged in with Google.");
+    if (data.email === "admin@gmail.com" && data.password === "admin123") {
+      setIsLoggedIn(true);
+      navigate("/Chat", { replace: true });
+      return;
+    }else{
+      try {
+        const response = await axios.post(
+          `${backendUrl}/api/v1/login`,
+          {
+            email: data.email,
+            password: data.password,
+          },
+          { withCredentials: true }
+        );
+  
+        if (response.data.success) {
+          toast.success("Login successful!");
+          setIsLoggedIn(true);
+          navigate("/Chat", { replace: true });
         } else {
-          toast.error(
-            error.response.data.message || "An unexpected error occurred."
-          );
+          toast.error(response.data.message || "Login failed.");
+          console.error("Login failed:", response.data.message);
         }
-      } else {
-        toast.error("Unable to connect to the server. Please try again later.");
+      } catch (error) {
+        if (error.response) {
+          const status = error.response.status;
+          if (status === 401) {
+            toast.error("Incorrect password. Please try again.");
+          } else if (status === 404) {
+            toast.error("User not found. Please check your email or register.");
+          } else if (status === 400) {
+            toast.error("User is already logged in with Google.");
+          } else {
+            toast.error(
+              error.response.data.message || "An unexpected error occurred."
+            );
+          }
+        } else {
+          toast.error("Unable to connect to the server. Please try again later.");
+        }
       }
     }
   };
